@@ -1,0 +1,22 @@
+name: pr-commit-message-enforcer-and-linker
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+
+jobs:
+  pr-commit-message-enforcer-and-linker:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v3
+      - run: echo ${{github.event_name}}
+      - name: Azure DevOps Commit Validator and Pull Request Linker
+        if: github.event_name == 'pull_request'
+        uses: joshjohanning/azdo_commit_message_validator@v1.0.2
+        with:
+          azure-devops-organization: ab-inbev-maz # The name of the Azure DevOps organization
+          azure-devops-token: ${{ secrets.AZURE_DEVOPS_PAT }} # "Azure DevOps Personal Access Token (needs to be a full PAT)
+          fail-if-missing-workitem-commit-link: true # Fail the action if a commit in the pull request is missing AB# in the commit message
+          link-commits-to-pull-request: true # Link the work items found in commits to the pull request
