@@ -2,8 +2,8 @@ name: pr-commit-message-enforcer-and-linker
 
 on:
   pull_request:
-    branches: ["main"]
-  push:
+    branches: ["empty"]
+  # push:
 
 jobs:
   pr-commit-message-enforcer-and-linker:

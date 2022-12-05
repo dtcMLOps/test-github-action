@@ -1,0 +1,72 @@
+# Continuous integration workflow
+name: "CI Pipeline Reusable"
+
+on:
+  workflow_call:
+    inputs:
+      test_folder_directory:
+        required: false
+        type: string
+        default: "none"
+        description: "path to tests folder"
+      unit_test_directory:
+        required: false
+        type: string
+        default: "none"
+        description: "path to unit testing folder"
+      integration_test_directory:
+        required: false
+        type: string
+        default: "none"
+        description: "path to integration testing folder"
+      requirements_directory:
+        required: false
+        type: string
+        description: "path to module requirements"
+      sonar_project_dir:
+        required: true
+        type: string
+        description: "path to sonar-project.properties file in module"
+      python_test_versions:
+        default: "['3.8']"
+        required: false
+        type: string
+    secrets:
+      GIT_TOKEN:
+        required: true
+      SONAR_TOKEN:
+        required: true
+      SQLALCHEMY_DATABASE_URL:
+        required: false
+      SQLALCHEMY_DATABASE_FOR_TESTING_URL:
+        required: false
+      env_vars:
+        description: List of environment variables to set up, given in env=value format.
+        required: false
+
+env:
+  REPO-NAME: ${{ github.event.repository.name }}
+  MYENVVAR: ${{ secrets.env_vars }}
+
+permissions:
+  contents: read
+  issues: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  set_environment_vars:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Set environment variables
+        if: "${{ env.MYENVVAR != '' }}"
+        run: |
+          for i in "${{ secrets.env_vars }}"
+          do
+            echo "$i" >> $GITHUB_ENV
+          done
+      - name: Check environment variables
+        run: |
+          echo "var1: ${{ env.SQLALCHEMY_DATABASE_URL_CO }}"
+          echo "var2: ${{ env.SQLALCHEMY_DATABASE_URL_PE }}"
+          echo "var3: ${{ env.SQLALCHEMY_DATABASE_URL_MX }}"
