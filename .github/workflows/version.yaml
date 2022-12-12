@@ -25,6 +25,7 @@ jobs:
         uses: codacy/git-version@2.7.1
         with:
           release-branch: release
+          minor-identifier: feat
 
       - name: Use the version
         run: |
@@ -46,6 +47,6 @@ jobs:
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ steps.version.outputs.previous-version }}
-          name: Release ${{ steps.version.outputs.previous-version }}
+          tag: ${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
           body: ${{ steps.tag_version.outputs.changelog }}
