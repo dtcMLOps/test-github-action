@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - test-cd-docker
+  pull_request:
+    branches:
+      - main
 
 jobs:
   version:
