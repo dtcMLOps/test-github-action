@@ -13,6 +13,10 @@ on:
 jobs:
   version:
     runs-on: ubuntu-22.04
+    permissions:
+      # https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs
+      contents: write
+      packages: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -43,6 +47,13 @@ jobs:
       - name: Prinvt the version
         run: |
           echo ${{ steps.tag_version.outputs.new_tag }}
+
+      - name: Tag Release
+        # https://github.com/marketplace/actions/create-update-tag
+        uses: rickstaa/action-create-tag@v1
+        with:
+          tag: ${{ steps.version.outputs.version }}
+          message: "Releasing version ${{ steps.version.outputs.version }}}"
 
       # - name: Create a GitHub release
       #   uses: ncipollo/release-action@v1
