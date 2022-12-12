@@ -53,8 +53,8 @@ jobs:
         # https://github.com/marketplace/actions/create-update-tag
         uses: rickstaa/action-create-tag@v1
         with:
-          tag: ${{ steps.version.outputs.version }}
-          message: "Releasing version ${{ steps.version.outputs.version }}}"
+          tag: $${{ steps.tag_version.outputs.new_tag }}
+          message: "Releasing version ${{ steps.tag_version.outputs.new_tag }}"
 
       # - name: Create a GitHub release
       #   uses: ncipollo/release-action@v1
