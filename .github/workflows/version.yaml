@@ -7,7 +7,7 @@ on:
       - test-cd-docker
 
 jobs:
-  lint:
+  version:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout Code
