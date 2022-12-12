@@ -44,9 +44,9 @@ jobs:
         run: |
           echo ${{ steps.tag_version.outputs.new_tag }}
 
-      - name: Create a GitHub release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ steps.version.outputs.version }}
-          name: Release ${{ steps.version.outputs.version }}
-          body: ${{ steps.tag_version.outputs.changelog }}
+      # - name: Create a GitHub release
+      #   uses: ncipollo/release-action@v1
+      #   with:
+      #     tag: ${{ steps.version.outputs.version }}
+      #     name: Release ${{ steps.version.outputs.version }}
+      #     body: ${{ steps.tag_version.outputs.changelog }}
