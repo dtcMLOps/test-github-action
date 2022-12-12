@@ -44,7 +44,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           release_branches: release.*
-          default_bump: minor
 
       - name: Prinvt the version
         run: |
