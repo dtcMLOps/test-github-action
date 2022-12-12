@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - test-cd-docker
+      - release
   pull_request:
     branches:
       - main
@@ -23,7 +24,7 @@ jobs:
         id: version
         uses: codacy/git-version@2.7.1
         with:
-          release-branch: main
+          release-branch: release
 
       - name: Use the version
         run: |
@@ -31,3 +32,20 @@ jobs:
       - name: Use the previous version
         run: |
           echo ${{ steps.version.outputs.previous-version }}
+
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prinvt the version
+        run: |
+          echo ${{ steps.tag_version.outputs.new_tag }}
+
+      - name: Create a GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.version.outputs.previous-version }}
+          name: Release ${{ steps.version.outputs.previous-version }}
+          body: ${{ steps.tag_version.outputs.changelog }}
