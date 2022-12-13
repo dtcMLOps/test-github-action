@@ -19,43 +19,48 @@ jobs:
       packages: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
         with:
           ref: ${{ github.head_ref }} # checkout the correct branch name
           fetch-depth: 0 # fetch the whole repo history
 
-      - name: Git Version
-        id: version
-        uses: codacy/git-version@2.8.0
-        with:
-          release-branch: release
-          minor-identifier: feat
+      # - name: Install tools Code
+      #   run: |
+      #     apt update
+      #     apt install -y curl jq
 
-      - name: Use the version
-        run: |
-          echo ${{ steps.version.outputs.version }}
-      - name: Use the previous version
-        run: |
-          echo ${{ steps.version.outputs.previous-version }}
+      # - name: Git Version
+      #   id: version
+      #   uses: codacy/git-version@2.8.0
+      #   with:
+      #     release-branch: release
+      #     minor-identifier: feat
 
-      - name: Bump version and push tag
-        id: tag_version
-        uses: mathieudutour/github-tag-action@v6.1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          release_branches: release.*
-          custom_release_rules: AB#/\d+/ feat:minor,AB#/\d+/ fix:patch
+      # - name: Use the version
+      #   run: |
+      #     echo ${{ steps.version.outputs.version }}
+      # - name: Use the previous version
+      #   run: |
+      #     echo ${{ steps.version.outputs.previous-version }}
 
-      - name: Prinvt the version
-        run: |
-          echo ${{ steps.tag_version.outputs.new_tag }}
+      # - name: Bump version and push tag
+      #   id: tag_version
+      #   uses: mathieudutour/github-tag-action@v6.1
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     release_branches: release.*
+      #     custom_release_rules: AB#/\d+/ feat:minor,AB#/\d+/ fix:patch
 
-      - name: Tag Release
-        # https://github.com/marketplace/actions/create-update-tag
-        uses: rickstaa/action-create-tag@v1
-        with:
-          tag: $${{ steps.tag_version.outputs.new_tag }}
-          message: "Releasing version ${{ steps.tag_version.outputs.new_tag }}"
+      # - name: Prinvt the version
+      #   run: |
+      #     echo ${{ steps.tag_version.outputs.new_tag }}
+
+      # - name: Tag Release
+      #   # https://github.com/marketplace/actions/create-update-tag
+      #   uses: rickstaa/action-create-tag@v1
+      #   with:
+      #     tag: $${{ steps.tag_version.outputs.new_tag }}
+      #     message: "Releasing version ${{ steps.tag_version.outputs.new_tag }}"
 
       # - name: Create a GitHub release
       #   uses: ncipollo/release-action@v1
@@ -64,21 +69,22 @@ jobs:
       #     name: Release ${{ steps.version.outputs.version }}
       #     body: ${{ steps.tag_version.outputs.changelog }}
 
-      - name: Get version and version code
-        uses: xom9ikk/version-by-tag@v1
-        id: version_by_tag
-        with:
-          path: .
-          isUseGithubRunNumber: false
-          offset: 0
+      # - name: Get version and version code
+      #   uses: xom9ikk/version-by-tag@v1
+      #   id: version_by_tag
+      #   with:
+      #     path: .
+      #     isUseGithubRunNumber: false
+      #     offset: 0
 
-      - name: Some other action
-        run: |
-          echo "Tag: ${{ steps.version_by_tag.outputs.tag }}"
-          echo "Semver: ${{ steps.version_by_tag.outputs.semver }}"
-          echo "Version code: ${{ steps.version_by_tag.outputs.versionCode }}"
+      # - name: Some other action
+      #   run: |
+      #     echo "Tag: ${{ steps.version_by_tag.outputs.tag }}"
+      #     echo "Semver: ${{ steps.version_by_tag.outputs.semver }}"
+      #     echo "Version code: ${{ steps.version_by_tag.outputs.versionCode }}"
 
       - uses: paulhatch/semantic-version@v4.0.2
+        id: version
         with:
           # The prefix to use to identify tags
           tag_prefix: "v"
@@ -104,3 +110,9 @@ jobs:
           search_commit_body: false
           # The output method used to generate list of users, 'csv' or 'json'.
           #user_format_type: "csv"
+
+      - name: Some other action
+        run: |
+          echo "Tag: ${{ steps.version.outputs.version_tag }}"
+          echo "Semver: ${{ steps.version.outputs.version_tag }}"
+          echo "Version code: ${{ steps.version.outputs.version_tag }}"
