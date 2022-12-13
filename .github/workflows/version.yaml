@@ -83,7 +83,7 @@ jobs:
       #     echo "Semver: ${{ steps.version_by_tag.outputs.semver }}"
       #     echo "Version code: ${{ steps.version_by_tag.outputs.versionCode }}"
 
-      - uses: paulhatch/semantic-version@v4.0.2
+      - uses: paulhatch/semantic-version@v5.0.0-beta
         id: version
         with:
           # The prefix to use to identify tags
