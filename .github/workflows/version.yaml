@@ -24,80 +24,11 @@ jobs:
           ref: ${{ github.head_ref }} # checkout the correct branch name
           fetch-depth: 0 # fetch the whole repo history
 
-      # - name: Install tools Code
-      #   run: |
-      #     apt update
-      #     apt install -y curl jq
-
-      # - name: Git Version
-      #   id: version
-      #   uses: codacy/git-version@2.8.0
-      #   with:
-      #     release-branch: release
-      #     minor-identifier: feat
-
-      # - name: Use the version
-      #   run: |
-      #     echo ${{ steps.version.outputs.version }}
-      # - name: Use the previous version
-      #   run: |
-      #     echo ${{ steps.version.outputs.previous-version }}
-
-      # - name: Bump version and push tag
-      #   id: tag_version
-      #   uses: mathieudutour/github-tag-action@v6.1
-      #   with:
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      #     release_branches: release.*
-      #     custom_release_rules: AB#/\d+/ feat:minor,AB#/\d+/ fix:patch
-
-      # - name: Prinvt the version
-      #   run: |
-      #     echo ${{ steps.tag_version.outputs.new_tag }}
-
-      # - name: Tag Release
-      #   # https://github.com/marketplace/actions/create-update-tag
-      #   uses: rickstaa/action-create-tag@v1
-      #   with:
-      #     tag: $${{ steps.tag_version.outputs.new_tag }}
-      #     message: "Releasing version ${{ steps.tag_version.outputs.new_tag }}"
-
-      # - name: Create a GitHub release
-      #   uses: ncipollo/release-action@v1
-      #   with:
-      #     tag: ${{ steps.version.outputs.version }}
-      #     name: Release ${{ steps.version.outputs.version }}
-      #     body: ${{ steps.tag_version.outputs.changelog }}
-
-      # - name: Get version and version code
-      #   uses: xom9ikk/version-by-tag@v1
-      #   id: version_by_tag
-      #   with:
-      #     path: .
-      #     isUseGithubRunNumber: false
-      #     offset: 0
-
-      # - name: Some other action
-      #   run: |
-      #     echo "Tag: ${{ steps.version_by_tag.outputs.tag }}"
-      #     echo "Semver: ${{ steps.version_by_tag.outputs.semver }}"
-      #     echo "Version code: ${{ steps.version_by_tag.outputs.versionCode }}"
-
-      - name: Find Azure ticket references
-        id: azure
-        uses: AsasInnab/regex-action@v1
-        with:
-          regex_pattern: "AB#[0-9]+"
-          regex_flags: "gim"
-          search_string: " My azure ticket number is AB#12345"
-      - name: Echo Azure reference
-        run: echo "My Azure ticket number is ${{ steps.azure.outputs.first_match }}"
-
       - uses: paulhatch/semantic-version@v5.0.0-beta
         id: version
         with:
           # The prefix to use to identify tags
-          tag_prefix: "v"
+          tag_prefix: "api_back/v"
           # A string which, if present in a git commit, indicates that a change represents a
           # major (breaking) change, supports regular expressions wrapped with '/'
           major_pattern: "/^AB#[0-9]+ feat!:.*$/"
@@ -112,7 +43,7 @@ jobs:
           version_format: "${major}.${minor}.${patch}"
           # Optional path to check for changes. If any changes are detected in the path the
           # 'changed' output will true. Enter multiple paths separated by spaces.
-          #change_path: "src/my-service"
+          change_path: "src/mymodule"
           # Named version, will be used as suffix for name version tag
           #namespace: my-service
           # If this is set to true, *every* commit will be treated as a new version.
@@ -122,7 +53,7 @@ jobs:
           # The output method used to generate list of users, 'csv' or 'json'.
           #user_format_type: "csv"
 
-      - name: Some other action
+      - name: Echo tag version
         run: |
           echo "Tag: ${{ steps.version.outputs.version_tag }}"
           echo "Semver: ${{ steps.version.outputs.version_tag }}"
