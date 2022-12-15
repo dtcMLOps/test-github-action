@@ -5,10 +5,10 @@ on:
   push:
     branches:
       - test-cd-docker
-      - release
+      - empty
   pull_request:
     branches:
-      - main
+      - empty
 
 jobs:
   version:
