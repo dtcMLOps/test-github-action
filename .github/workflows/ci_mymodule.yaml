@@ -1,4 +1,4 @@
-name: CI Pipeline MODULE Test
+name: CI Pipeline MODULE Test 2
 
 on:
   pull_request:
