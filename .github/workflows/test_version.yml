@@ -12,8 +12,8 @@ jobs:
     name: VER
     uses: ./.github/workflows/semantic_version_reusable.yml
     with:
-      tag_prefix: pop_front
-      module_path: ./src/api/backend/
+      tag_prefix: api_fronten2
+      module_path: src
     secrets:
       GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

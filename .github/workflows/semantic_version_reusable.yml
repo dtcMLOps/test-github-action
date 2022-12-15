@@ -67,7 +67,7 @@ jobs:
           # A string which indicates the flags used by the `minor_pattern` regular expression. Supported flags: idgs
           minor_regexp_flags: "g"
           # A string to determine the format of the version output
-          version_format: "${major}.${minor}.${patch}-prerelease${increment}"
+          version_format: "${major}.${minor}.${patch}"
           # Optional path to check for changes. If any changes are detected in the path the
           # 'changed' output will true. Enter multiple paths separated by spaces.
           change_path: ${{ inputs.module_path }}
@@ -85,9 +85,15 @@ jobs:
           echo "version=${{ steps.generated_version.outputs.version_tag }}" >> $GITHUB_OUTPUT
 
       # release tag version on repository
-      - name: Tag Release
-        uses: rickstaa/action-create-tag@v1
+      # - name: Tag Release
+      #   uses: rickstaa/action-create-tag@v1.5.0
+      #   with:
+      #     tag: ${{ steps.generated_version.outputs.version_tag }}
+      #     message: "Releasing version ${{ steps.generated_version.outputs.version_tag }}"
+
+      - name: Bump version and push tag
+        uses: mathieudutour/github-tag-action@v6.0
         with:
-          tag: ${{ steps.generated_version.outputs.version_tag }}
-          message: "Releasing version ${{ steps.generated_version.outputs.version_tag }}"
-          github_token: ${{ secrets.GIT_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: none
+          custom_tag: ${{ steps.generated_version.outputs.version_tag }}
