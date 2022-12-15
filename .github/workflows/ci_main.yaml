@@ -7,8 +7,8 @@ on:
     types: [opened, reopened, synchronize]
     paths-ignore:
       - src/**
-      - .github/workflows/ci_mymodule.yaml
-      #- "!.github/workflows/ci_main.yaml"
+      - .github/workflows/ci**
+      - "!.github/workflows/ci_main.yaml"
 
 jobs:
   lint_and_test:
