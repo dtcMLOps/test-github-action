@@ -1,0 +1,19 @@
+name: CI Pipeline MODULE Test 6
+
+on:
+  pull_request:
+    branches:
+      - empty
+    types: [opened, reopened, synchronize]
+    paths-ignore:
+      - "src/**"
+      - ".github/workflows/*.ci**"
+      - "!.github/workflows/ci_main.yaml"
+
+jobs:
+  lint_and_test:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Echo CI job
+        run: |
+          echo "running CI Pipeline"
