@@ -1,0 +1,25 @@
+name: Test Versioning
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
+
+jobs:
+  # call semantic version reusable workflow
+  versioning:
+    name: VER
+    uses: ./.github/workflows/semantic_version_reusable.yml
+    with:
+      tag_prefix: pop_front
+      module_path: ./src/api/backend/
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  call_ver_on_caller_work:
+    runs-on: ubuntu-22.04
+    name: VER / Print Version
+    needs: versioning
+    steps:
+      - run: echo ${{ needs.versioning.outputs.version_tag }}

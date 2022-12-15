@@ -3,7 +3,7 @@ name: CI Pipeline MAIN
 on:
   pull_request:
     branches:
-      - main
+      - empty
     types: [opened, reopened, synchronize]
     paths-ignore:
       - src/**
