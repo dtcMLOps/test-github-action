@@ -1,5 +1,5 @@
 # .github/workflows/version.yml
-name: Git Version
+name: Git Version Test
 
 on:
   push:
