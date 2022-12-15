@@ -4,8 +4,7 @@ name: Git Version
 on:
   push:
     branches:
-      - test-cd-docker
-      - empty
+      - release2
   pull_request:
     branches:
       - empty
