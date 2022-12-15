@@ -12,14 +12,31 @@ jobs:
     name: VER
     uses: ./.github/workflows/semantic_version_reusable.yml
     with:
-      tag_prefix: api_fronten2
-      module_path: src
+      tag_prefix: api_fronten
+      module_path: .
     secrets:
       GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # release_tag:
+  #   runs-on: ubuntu-22.04
+  #   name: VER / Release tag
+  #   needs: versioning
+  #   steps:
+  #     - name: Checkout current repository
+  #       uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0 # fetch the whole repo history
+
+  #     # release tag version on repository
+  #     - name: Tag Release
+  #       uses: rickstaa/action-create-tag@v1.5.0
+  #       with:
+  #         tag: "${{ needs.versioning.outputs.version }}"
+  #         message: "Releasing version ${{ needs.versioning.outputs.version }}"
 
   call_ver_on_caller_work:
     runs-on: ubuntu-22.04
     name: VER / Print Version
     needs: versioning
     steps:
-      - run: echo ${{ needs.versioning.outputs.version_tag }}
+      - run: echo ${{ needs.versioning.outputs.version }}

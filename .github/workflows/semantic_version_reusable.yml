@@ -41,14 +41,13 @@ jobs:
     name: Sem Version Generator
 
     outputs:
-      version: ${{ steps.generated_version.outputs.version_tag }}
+      version: ${{ steps.print_version.outputs.semver }}
 
     steps:
       # clones current repository
       - name: Checkout current repository
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.head_ref }} # checkout the correct branch name
           fetch-depth: 0 # fetch the whole repo history
 
       # calculate version tag based on codebase commit types
@@ -67,7 +66,7 @@ jobs:
           # A string which indicates the flags used by the `minor_pattern` regular expression. Supported flags: idgs
           minor_regexp_flags: "g"
           # A string to determine the format of the version output
-          version_format: "${major}.${minor}.${patch}"
+          version_format: "${major}.${minor}.${patch}-prerelease${increment}"
           # Optional path to check for changes. If any changes are detected in the path the
           # 'changed' output will true. Enter multiple paths separated by spaces.
           change_path: ${{ inputs.module_path }}
@@ -78,22 +77,17 @@ jobs:
 
       # print new tag version
       - name: Echo tag version
+        id: print_version
         run: |
           echo "Tag: ${{ steps.generated_version.outputs.version_tag }}"
           echo "Semver: ${{ steps.generated_version.outputs.version_tag }}"
           echo "Version code: ${{ steps.generated_version.outputs.version_tag }}"
-          echo "version=${{ steps.generated_version.outputs.version_tag }}" >> $GITHUB_OUTPUT
+          echo "semver=${{ steps.generated_version.outputs.version_tag }}" >> $GITHUB_OUTPUT
 
       # release tag version on repository
-      # - name: Tag Release
-      #   uses: rickstaa/action-create-tag@v1.5.0
-      #   with:
-      #     tag: ${{ steps.generated_version.outputs.version_tag }}
-      #     message: "Releasing version ${{ steps.generated_version.outputs.version_tag }}"
-
-      - name: Bump version and push tag
-        uses: mathieudutour/github-tag-action@v6.0
+      - name: Tag Release
+        uses: rickstaa/action-create-tag@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: none
-          custom_tag: ${{ steps.generated_version.outputs.version_tag }}
+          tag: ${{ steps.generated_version.outputs.version_tag }}
+          message: "Releasing version ${{ steps.generated_version.outputs.version_tag }}"
+          github_token: ${{ secrets.GIT_TOKEN }}
