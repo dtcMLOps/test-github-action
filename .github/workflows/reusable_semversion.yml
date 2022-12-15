@@ -14,21 +14,29 @@ on:
   workflow_call:
     inputs:
       tag_prefix:
-        required: true
+        required: false
         type: string
-        default: "myapp"
-        description: "application or module name"
+        default: "v"
+        description: "tag name for the application or module"
       module_path:
-        required: true
+        required: false
         type: string
-        default: "src"
+        default: "."
         description: "path to the application or module directory"
+      tag_release:
+        required: false
+        type: boolean
+        default: false
+        description: "release a tag (default: false)"
 
     # output version to be used in the caller workflow
     outputs:
       version:
         description: "tag version generated"
         value: ${{ jobs.versioning_generator.outputs.version }}
+      prev_version:
+        description: "previous tag version"
+        value: ${{ jobs.versioning_generator.outputs.prev_version }}
 
     secrets:
       GIT_TOKEN:
@@ -42,6 +50,7 @@ jobs:
 
     outputs:
       version: ${{ steps.print_version.outputs.semver }}
+      prev_version: ${{ steps.print_version.outputs.prevsemver }}
 
     steps:
       # clones current repository
@@ -55,7 +64,7 @@ jobs:
         id: generated_version
         with:
           # The prefix to use to identify tags
-          tag_prefix: "${{ inputs.tag_prefix }}/v"
+          tag_prefix: "${{ inputs.tag_prefix }}"
           # A string which, if present in a git commit, indicates that a change represents a
           # major (breaking) change, supports regular expressions wrapped with '/'
           major_pattern: "/^AB#[0-9]+ feat!:.*$/"
@@ -87,9 +96,10 @@ jobs:
           echo "prevsemver=${{ steps.generated_version.outputs.previous_version }}" >> $GITHUB_OUTPUT
 
       # release tag version on repository
-      # - name: Tag Release
-      #   uses: rickstaa/action-create-tag@v1
-      #   with:
-      #     tag: ${{ steps.generated_version.outputs.version_tag }}
-      #     message: "Releasing version ${{ steps.generated_version.outputs.version_tag }}"
-      #     github_token: ${{ secrets.GIT_TOKEN }}
+      - name: Tag Release
+        if:  ${{ inputs.tag_release}}
+        uses: rickstaa/action-create-tag@v1
+        with:
+          tag: ${{ steps.generated_version.outputs.version_tag }}
+          message: "Releasing version ${{ steps.generated_version.outputs.version_tag }}"
+          github_token: ${{ secrets.GIT_TOKEN }}
