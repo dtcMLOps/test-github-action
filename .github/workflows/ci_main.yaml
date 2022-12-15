@@ -7,7 +7,7 @@ on:
     types: [opened, reopened, synchronize]
     paths-ignore:
       - "src/**"
-      - ".github/workflows/*ci*.yaml"
+      - ".github/workflows/ci**.yaml"
       - "!.github/workflows/ci_main.yaml"
 
 jobs:
