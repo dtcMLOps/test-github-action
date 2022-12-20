@@ -3,7 +3,7 @@ name: Test Versioning
 on:
   pull_request:
     branches:
-      - main
+      - empty
     types: [opened, reopened, synchronize]
 
 jobs:
