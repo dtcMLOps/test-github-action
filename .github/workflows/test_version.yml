@@ -1,0 +1,80 @@
+name: Test Versioning
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
+
+jobs:
+  # call semantic version reusable workflow
+  versioning:
+    name: VER
+    uses: ./.github/workflows/reusable_semversion.yml
+    with:
+      tag_prefix: api_back/v
+      tag_release: true
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release_changelog:
+    runs-on: ubuntu-22.04
+    name: VER / Release changelog
+    needs: versioning
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # fetch the whole repo history
+
+      - name: "Build Changelog"
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v3.5.0
+        with:
+          fromTag: "api_fronten/v2.1.36"
+          toTag: "api_fronten/v2.1.37"
+          #commitMode: true
+          configuration: ".changelogrc"
+          # configurationJson: |
+          #   {
+          #     "template": "#{{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n#{{UNCATEGORIZED}}\n</details>",
+          #     "categories": [
+          #       {
+          #           "title": "## 💬 Other",
+          #           "labels": ["other"]
+          #       },
+          #       {
+          #           "title": "## 📦 Dependencies",
+          #           "labels": ["dependencies"]
+          #       }
+          #     ]
+          #   }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Create Release
+      #   uses: mikepenz/action-gh-release@v0.2.0-a03
+      #   with:
+      #     owner: ${{ github.actor }}
+      #     repo: ${{ github.repositoryUrl }}
+      #     tag_name: ${{ needs.versioning.outputs.version }}
+      #     body: ${{steps.github_release.outputs.changelog}}
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ needs.versioning.outputs.version }}
+          release_name: Release ${{ needs.versioning.outputs.version }}
+          body: ${{steps.github_release.outputs.changelog}}
+          draft: false
+          prerelease: false
+
+  call_ver_on_caller_work:
+    runs-on: ubuntu-22.04
+    name: VER / Print Version
+    needs: versioning
+    steps:
+      - run: echo ${{ needs.versioning.outputs.version }}

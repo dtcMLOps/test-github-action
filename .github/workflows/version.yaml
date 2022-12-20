@@ -4,7 +4,6 @@ name: Git Version
 on:
   push:
     branches:
-      - test-cd-docker
       - empty
   pull_request:
     branches:
@@ -28,7 +27,7 @@ jobs:
         id: version
         with:
           # The prefix to use to identify tags
-          tag_prefix: "api_back/v"
+          tag_prefix: "api_fronten2/v"
           # A string which, if present in a git commit, indicates that a change represents a
           # major (breaking) change, supports regular expressions wrapped with '/'
           major_pattern: "/^AB#[0-9]+ feat!:.*$/"
