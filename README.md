@@ -8,6 +8,8 @@
 | API FRONT |[![version - 0.0.1](https://img.shields.io/badge/version-0.0.1-blue)](https://) | |  |
 | MLFLOW    | [![version - 0.0.1](https://img.shields.io/badge/version-0.0.1-blue)](https://)   |   |     |
 | BEES      |  [![version - 0.0.1](https://img.shields.io/badge/version-0.0.1-blue)](https://) | |         |   |  |
+=======
 
 </div>
+
 
