@@ -20,7 +20,7 @@ jobs:
     uses: ./.github/workflows/reusable_semversion.yml
     with:
       tag_prefix: mypkg/v
-      tag_release: true
+      tag_release: ${{ inputs.tag_release}}
     secrets:
       GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
