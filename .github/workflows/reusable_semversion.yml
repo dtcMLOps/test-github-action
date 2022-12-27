@@ -37,6 +37,9 @@ on:
       prev_version:
         description: "previous tag version"
         value: ${{ jobs.versioning_generator.outputs.prev_version }}
+      sem_version:
+        description: "semantic version"
+        value: ${{ jobs.versioning_generator.outputs.semantic_version }}
 
     secrets:
       GIT_TOKEN:
@@ -49,8 +52,9 @@ jobs:
     name: Sem Version Generator
 
     outputs:
-      version: ${{ steps.print_version.outputs.semver }}
+      version: ${{ steps.print_version.outputs.versiontag }}
       prev_version: ${{ steps.print_version.outputs.prevsemver }}
+      semantic_version: ${{ steps.print_version.outputs.semver }}
 
     steps:
       # clones current repository
@@ -88,12 +92,13 @@ jobs:
       - name: Echo tag version
         id: print_version
         run: |
-          echo "tag release is: ${{inputs.tag_release}}"
+          echo "tag release is: ${{ inputs.tag_release }}"
           echo "Tag: ${{ steps.generated_version.outputs.version_tag }}"
           echo "Semver: ${{ steps.generated_version.outputs.version }}"
           echo "Prev tag: ${{ steps.generated_version.outputs.previous_version }}"
           echo "Prev commit: ${{ steps.generated_version.outputs.previous_commit }}"
-          echo "semver=${{ steps.generated_version.outputs.version_tag }}" >> $GITHUB_OUTPUT
+          echo "versiontag=${{ steps.generated_version.outputs.version_tag }}" >> $GITHUB_OUTPUT
+          echo "semver=${{ steps.generated_version.outputs.major }}.${{ steps.generated_version.outputs.minor }}.${{ steps.generated_version.outputs.patch }}" >> $GITHUB_OUTPUT
           echo "prevsemver=${{ steps.generated_version.outputs.previous_version }}" >> $GITHUB_OUTPUT
 
       # release tag version on repository

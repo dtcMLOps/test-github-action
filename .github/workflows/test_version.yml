@@ -90,4 +90,6 @@ jobs:
     name: VER / Print Version
     needs: versioning
     steps:
-      - run: echo ${{ needs.versioning.outputs.version }}
+      - run: |
+          echo ${{ needs.versioning.outputs.version }}
+          echo ${{ needs.versioning.outputs.sem_version }}
