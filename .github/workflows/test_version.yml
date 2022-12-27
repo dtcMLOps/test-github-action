@@ -1,19 +1,25 @@
 name: Test Versioning
 
 on:
-  # pull_request:
-  #   branches:
-  #     - empty
-  #   types: [opened, reopened, synchronize]
   workflow_dispatch:
     inputs:
-      release_tag:
+      tag_release:
         description: "Release Tag?"
         required: false
-        default: false
         type: boolean
 
 jobs:
+  # versioning system generator
+  print:
+    runs-on: ubuntu-22.04
+    name: Print
+
+    steps:
+      # print new tag version
+      - name: Echo tag version
+        run: |
+          echo "tag release is: ${{inputs.tag_release}}"
+
   # call semantic version reusable workflow
   versioning:
     name: VER

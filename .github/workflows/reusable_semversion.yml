@@ -25,7 +25,7 @@ on:
         description: "path to the application or module directory"
       tag_release:
         required: false
-        type: boolean
+        type: string
         default: false
         description: "release a tag (default: false)"
 
@@ -88,6 +88,7 @@ jobs:
       - name: Echo tag version
         id: print_version
         run: |
+          echo "tag release is: ${{inputs.tag_release}}"
           echo "Tag: ${{ steps.generated_version.outputs.version_tag }}"
           echo "Semver: ${{ steps.generated_version.outputs.version }}"
           echo "Prev tag: ${{ steps.generated_version.outputs.previous_version }}"
@@ -97,7 +98,7 @@ jobs:
 
       # release tag version on repository
       - name: Tag Release
-        if: ${{ inputs.tag_release}}
+        if: ${{ inputs.tag_release == 'true' }}
         uses: rickstaa/action-create-tag@v1
         with:
           tag: ${{ steps.generated_version.outputs.version_tag }}
