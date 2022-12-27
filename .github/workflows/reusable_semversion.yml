@@ -8,7 +8,7 @@
 # version = 0.1.0      --------> major=0 minor=1 patch=0
 # there is an option to enable BREAKING CHANGE in the commit footer as well
 # more info about this action can be found on https://github.com/PaulHatch/semantic-version
-name: "Semantic Versioning Reusable"
+name: "Reusable Semantic Versioning"
 
 on:
   workflow_call:
@@ -80,7 +80,7 @@ jobs:
           # 'changed' output will true. Enter multiple paths separated by spaces.
           change_path: ${{ inputs.module_path }}
           # If this is set to true, *every* commit will be treated as a new version.
-          bump_each_commit: true
+          bump_each_commit: false
           # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
           search_commit_body: false
 
@@ -97,7 +97,7 @@ jobs:
 
       # release tag version on repository
       - name: Tag Release
-        if:  ${{ inputs.tag_release}}
+        if: ${{ inputs.tag_release}}
         uses: rickstaa/action-create-tag@v1
         with:
           tag: ${{ steps.generated_version.outputs.version_tag }}
