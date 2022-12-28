@@ -51,7 +51,7 @@ jobs:
           tags: |
             type=match,pattern=${{ inputs.tag_name }}/v(\d.\d.\d),group=1
             type=sha
-            type=raw, value=${{ needs.versioning.outputs.version }}
+            type=raw, value=${{ needs.versioning.outputs.sem_version }}
 
       # - name: Set up Docker Buildx
       #   uses: docker/setup-buildx-action@v2

@@ -49,7 +49,7 @@ jobs:
   # versioning system generator
   versioning_generator:
     runs-on: ubuntu-22.04
-    name: Sem Version Generator
+    name: SemVer Generator
 
     outputs:
       version: ${{ steps.print_version.outputs.versiontag }}
