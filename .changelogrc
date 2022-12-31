@@ -7,6 +7,12 @@
       ]
     },
     {
+      {
+        "title": "## 💬 Other",
+        "labels": [
+          "other"
+        ]
+      }
       "title": "## 🐛 Fixes",
       "labels": [
         "fix(module1)"
@@ -24,12 +30,6 @@
         "docs(module1)"
       ],
       "exhaustive": true
-    },
-    {
-      "title": "## 💬 Other",
-      "labels": [
-        "other"
-      ]
     }
   ],
   "ignore_labels": [
@@ -39,7 +39,7 @@
     "order": "ASC",
     "on_property": "mergedAt"
   },
-  "template": "${{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n${{UNCATEGORIZED}}\n</details>",
+  "template": "${{CHANGELOG}}\n\n## 💬 Other\n\n${{UNCATEGORIZED}}\n\n${{AUTHOR}}\n",
   "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
   "label_extractor": [
     {

@@ -37,7 +37,8 @@ jobs:
         uses: mikepenz/release-changelog-builder-action@v3.5.0
         with:
           fromTag: mypkg/v${{ needs.versioning.outputs.prev_version }}
-          #commitMode: true
+          toTag: ${{ needs.versioning.outputs.version }}
+          owner: ${{github.actor}}
           configuration: ".changelogrc"
           # configurationJson: |
           #   {
@@ -85,3 +86,4 @@ jobs:
           echo ${{ needs.versioning.outputs.version }}
           echo ${{ needs.versioning.outputs.prev_version }}
           echo ${{ needs.versioning.outputs.sem_version }}
+          echo ${{ needs.versioning.outputs.current_commit }}
