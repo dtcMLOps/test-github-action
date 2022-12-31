@@ -37,7 +37,6 @@ jobs:
         uses: mikepenz/release-changelog-builder-action@v3.5.0
         with:
           fromTag: mypkg/v${{ needs.versioning.outputs.prev_version }}
-          toTag: ${{ needs.versioning.outputs.version }}
           #commitMode: true
           configuration: ".changelogrc"
           # configurationJson: |
