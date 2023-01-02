@@ -40,6 +40,9 @@ on:
       sem_version:
         description: "semantic version"
         value: ${{ jobs.versioning_generator.outputs.semantic_version }}
+      current_commit:
+        description: "new generated hash"
+        value: ${{ jobs.versioning_generator.outputs.new_commit_hash }}
 
     secrets:
       GIT_TOKEN:
@@ -55,6 +58,7 @@ jobs:
       version: ${{ steps.print_version.outputs.versiontag }}
       prev_version: ${{ steps.print_version.outputs.prevsemver }}
       semantic_version: ${{ steps.print_version.outputs.semver }}
+      new_commit_hash: ${{ steps.print_version.outputs.commithash }}
 
     steps:
       # clones current repository
@@ -64,7 +68,7 @@ jobs:
           fetch-depth: 0 # fetch the whole repo history
 
       # calculate version tag based on codebase commit types
-      - uses: paulhatch/semantic-version@v5.0.0-beta2
+      - uses: paulhatch/semantic-version@v5.0.2
         id: generated_version
         with:
           # The prefix to use to identify tags
@@ -97,9 +101,11 @@ jobs:
           echo "Semver: ${{ steps.generated_version.outputs.version }}"
           echo "Prev tag: ${{ steps.generated_version.outputs.previous_version }}"
           echo "Prev commit: ${{ steps.generated_version.outputs.previous_commit }}"
+          echo "Curr commit: ${{ steps.generated_version.outputs.current_commit }}"
           echo "versiontag=${{ steps.generated_version.outputs.version_tag }}" >> $GITHUB_OUTPUT
           echo "semver=${{ steps.generated_version.outputs.major }}.${{ steps.generated_version.outputs.minor }}.${{ steps.generated_version.outputs.patch }}" >> $GITHUB_OUTPUT
           echo "prevsemver=${{ steps.generated_version.outputs.previous_version }}" >> $GITHUB_OUTPUT
+          echo "commithash=${{ steps.generated_version.outputs.currentCommit }}" >> $GITHUB_OUTPUT
 
       # release tag version on repository
       - name: Tag Release

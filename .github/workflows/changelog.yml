@@ -1,0 +1,140 @@
+name: ChangeLog
+
+on:
+  push:
+    branches:
+      - changelog-gen
+  # workflow_dispatch:
+  #   inputs:
+  #     tag_release:
+  #       description: "Release Tag?"
+  #       required: false
+  #       type: boolean
+
+jobs:
+  # call semantic version reusable workflow
+  versioning:
+    name: VER
+    uses: ./.github/workflows/reusable_semversion.yml
+    with:
+      tag_prefix: mypkg/v
+      tag_release: false
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release_changelog:
+    runs-on: ubuntu-22.04
+    name: VER / Release changelog
+    permissions:
+      contents: write
+    needs: versioning
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # fetch the whole repo history
+
+      - name: "Build Changelog"
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v3.5.0
+        with:
+          fromTag: mypkg/v${{ needs.versioning.outputs.prev_version }}
+          toTag: ${{ needs.versioning.outputs.version }}
+          fetchReviewers: true
+          includeOpen: true
+          failOnError: true
+          # owner: ${{github.actor}}
+          configuration: ".changelogrc"
+          # configurationJson: |
+          #   "label_extractor": [
+          #         {
+          #           "pattern": ".*(feat\\(module1\\)).*",
+          #           "target": "$1",
+          #           "on_property": "title"
+          #         },
+          #         {
+          #           "pattern": ".*(test\\(module1\\)).*",
+          #           "target": "$1",
+          #           "on_property": "title"
+          #         }
+          #     ]
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # The international standard date as year-month-day: YYYY-MM-DD.
+      - name: Set current date as env variable
+        run: echo "NOW=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Echo current date
+        run: echo $NOW
+
+      # - name: Create Release
+      #   uses: mikepenz/action-gh-release@v0.2.0-a03
+      #   with:
+      #     owner: ${{ github.actor }}
+      #     repo: ${{ github.repositoryUrl }}
+      #     tag_name: ${{ needs.versioning.outputs.version }}
+      #     body: ${{steps.github_release.outputs.changelog}}
+
+      # - name: Create Release
+      #   id: create_release
+      #   uses: actions/create-release@v1# Gives "2022-12-11"
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      #   with:
+      #     tag_name: ${{ needs.versioning.outputs.version }}
+      #     release_name: "${{ needs.versioning.outputs.version }} (${{ env.NOW }})"
+      #     body: ${{steps.build_changelog.outputs.changelog}}
+      #     draft: false
+      #     prerelease: false
+
+      # - uses: montudor/action-zip@v1.0.0
+      #   with:
+      #     args: zip -qq -r "module.zip" src/mymodule
+      #     entryPoint: src
+
+      - name: Archive Release zip
+        uses: thedoctor0/zip-release@0.6.2
+        with:
+          type: "zip"
+          filename: "${{ github.event.repository.name }}-mypkg-v${{ needs.versioning.outputs.sem_version }}.zip"
+          exclusions: "*.git* /*node_modules/* .editorconfig"
+          directory: src/mymodule
+
+      # - name: Archive Release tar
+      #   uses: thedoctor0/zip-release@0.6.2
+      #   with:
+      #     type: "tar"
+      #     filename: "${{ github.event.repository.name }}-mypkg-v${{ needs.versioning.outputs.sem_version }}.tar.gz"
+      #     directory: src/mymodule
+      #     exclusions: "${{ github.event.repository.name }}-mypkg-v${{ needs.versioning.outputs.sem_version }}.tar.gz"
+
+      # - uses: ncipollo/release-action@v1
+      #   with:
+      #     artifacts: "Source Code.zip"
+      #     name: "${{ needs.versioning.outputs.version }} (${{ env.NOW }})"
+      #     body: ${{steps.build_changelog.outputs.changelog}}
+      #     tag: ${{ needs.versioning.outputs.version }}
+      #     skipIfReleaseExists: true
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "${{ needs.versioning.outputs.version }} (${{ env.NOW }})"
+          body: ${{steps.build_changelog.outputs.changelog}}
+          tag_name: ${{ needs.versioning.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            src/mymodule/${{ github.event.repository.name }}-mypkg-v${{ needs.versioning.outputs.sem_version }}.zip
+
+  call_ver_on_caller_work:
+    runs-on: ubuntu-22.04
+    name: VER / Print Version
+    needs: versioning
+    steps:
+      - run: |
+          echo ${{ needs.versioning.outputs.version }}
+          echo ${{ needs.versioning.outputs.prev_version }}
+          echo ${{ needs.versioning.outputs.sem_version }}
+          echo ${{ needs.versioning.outputs.current_commit }}

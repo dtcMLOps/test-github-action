@@ -1,0 +1,147 @@
+# Reusable changelog generator workflow
+name: Reusable ChangeLog Gen
+
+on:
+  # Event to call "import" this workflow from a caller a workflow
+  workflow_call:
+    # input string to be provided by the caller workflow
+    inputs:
+      module:
+        required: true
+        type: string
+        default: "none"
+        description: "module name"
+      module_dir:
+        required: true
+        type: string
+        default: "none"
+        description: "module directory"
+      version:
+        required: false
+        type: string
+        default: "none"
+        description: "module semantic version"
+      fromTag:
+        required: false
+        type: string
+        default: "none"
+        description: "describes the lower bound to process pull requests for"
+      toTag:
+        required: false
+        type: string
+        default: "none"
+        description: "describes the upper bound to process pull request for"
+      release_title:
+        required: true
+        type: string
+        default: "none"
+        description: "title for the release"
+
+    secrets:
+      GIT_TOKEN:
+        required: true
+
+jobs:
+  # changelog generator job
+  changelo_generator:
+    runs-on: ubuntu-22.04
+    name: Changelog Generator
+    steps:
+      # clones current repository
+      - name: Checkout current repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # fetch the whole repo history
+
+      # Build changelog
+      - name: Build Changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v3.5.0
+        with:
+          fromTag: ${{ inputs.fromTag }}
+          toTag: ${{ inputs.toTag }}
+          fetchReviewers: true
+          includeOpen: false
+          failOnError: true
+          configurationJson: |
+            {
+              "categories": [
+                {
+                  "title": "## 🚀 Features",
+                  "labels": [
+                    "feat(${{ inputs.module }})"
+                  ]
+                },
+                {
+                  "title": "## 🐛 Fixes",
+                  "labels": [
+                    "fix(${{ inputs.module }})"
+                  ]
+                },
+                {
+                  "title": "## 🧪 Tests",
+                  "labels": [
+                    "test(${{ inputs.module }})"
+                  ]
+                }
+              ],
+              "sort": {
+                "order": "ASC",
+                "on_property": "mergedAt"
+              },
+              "template": "All notable changes to this project will be documented in this file. \n\n ## Changes ${{RELEASE_DIFF}} \n\n${{CHANGELOG}}\n\n## 💬 Other\n\n${{UNCATEGORIZED}}\n\n ## ⏳Unreleased\n\n${{OPEN_COUNT}} \n",
+              "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}\n   - thanks to @${{AUTHOR}}\n   - Special thanks to the reviewers: ${{REVIEWERS}}",
+              "label_extractor": [
+                {
+                  "pattern": ".*(feat\\(${{ inputs.module }}\\)).*",
+                  "target": "$1",
+                  "on_property": "title"
+                },
+                {
+                  "pattern": ".*(fix\\(${{ inputs.module }}\\)).*",
+                  "target": "$1",
+                  "on_property": "title"
+                },
+                {
+                  "pattern": ".*(test\\(${{ inputs.module }}\\)).*",
+                  "target": "$1",
+                  "on_property": "title"
+                }
+              ]
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Set release date as year-month-day: YYYY-MM-DD.
+      - name: Set Release Date
+        run: |
+          echo "NOW=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+          echo $NOW
+
+      # Archive release folder
+      - name: Archive Release zip
+        uses: thedoctor0/zip-release@0.6.2
+        with:
+          type: "zip"
+          filename: "${{ github.event.repository.name }}-${{ inputs.module }}-v${{ inputs.version }}.zip"
+          exclusions: "*.git* /*node_modules/* .editorconfig"
+          directory: ${{ inputs.module_dir }}
+
+      # - name: Archive Release tar
+      #   uses: thedoctor0/zip-release@0.6.2
+      #   with:
+      #     type: "tar"
+      #     filename: "${{ github.event.repository.name }}-mypkg-v${{ needs.versioning.outputs.sem_version }}.tar.gz"
+      #     directory: src/mymodule
+      #     exclusions: "${{ github.event.repository.name }}-mypkg-v${{ needs.versioning.outputs.sem_version }}.tar.gz"
+
+      # Create release
+      - name: Release Changelog
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "${{ inputs.release_title }} (${{ env.NOW }})"
+          body: ${{ steps.build_changelog.outputs.changelog }}
+          tag_name: ${{ inputs.module }}/v${{ inputs.version }}
+          token: ${{ secrets.GIT_TOKEN }}
+          files: |
+            ${{ inputs.module_dir }}/${{ github.event.repository.name }}-${{ inputs.module }}-v${{ inputs.version }}.zip
