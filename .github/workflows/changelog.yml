@@ -42,6 +42,7 @@ jobs:
           toTag: ${{ needs.versioning.outputs.version }}
           fetchReviewers: true
           includeOpen: true
+          failOnError: true
           # owner: ${{github.actor}}
           configuration: ".changelogrc"
           # configurationJson: |
