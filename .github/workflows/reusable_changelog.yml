@@ -6,16 +6,21 @@ on:
   workflow_call:
     # input string to be provided by the caller workflow
     inputs:
-      module:
+      scope:
         required: true
         type: string
         default: "none"
-        description: "module name"
-      module_dir:
+        description: "module scope name"
+      project_name:
         required: true
         type: string
         default: "none"
-        description: "module directory"
+        description: "module/sub-project name"
+      project_dir:
+        required: true
+        type: string
+        default: "none"
+        description: "module/sub-project directory"
       version:
         required: false
         type: string
@@ -31,11 +36,6 @@ on:
         type: string
         default: "none"
         description: "describes the upper bound to process pull request for"
-      release_title:
-        required: true
-        type: string
-        default: "none"
-        description: "title for the release"
 
     secrets:
       GIT_TOKEN:
@@ -48,7 +48,7 @@ jobs:
     name: Changelog Generator
     steps:
       # clones current repository
-      - name: Checkout current repository
+      - name: Clone Repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0 # fetch the whole repo history
@@ -61,6 +61,7 @@ jobs:
           fromTag: ${{ inputs.fromTag }}
           toTag: ${{ inputs.toTag }}
           fetchReviewers: true
+          fetchReleaseInformation: true
           includeOpen: false
           failOnError: true
           configurationJson: |
@@ -69,19 +70,19 @@ jobs:
                 {
                   "title": "## 🚀 Features",
                   "labels": [
-                    "feat(${{ inputs.module }})"
+                    "feat(${{ inputs.scope }})"
                   ]
                 },
                 {
                   "title": "## 🐛 Fixes",
                   "labels": [
-                    "fix(${{ inputs.module }})"
+                    "fix(${{ inputs.scope }})"
                   ]
                 },
                 {
                   "title": "## 🧪 Tests",
                   "labels": [
-                    "test(${{ inputs.module }})"
+                    "test(${{ inputs.scope }})"
                   ]
                 }
               ],
@@ -89,21 +90,21 @@ jobs:
                 "order": "ASC",
                 "on_property": "mergedAt"
               },
-              "template": "All notable changes to this project will be documented in this file. \n\n ## Changes ${{RELEASE_DIFF}} \n\n${{CHANGELOG}}\n\n## 💬 Other\n\n${{UNCATEGORIZED}}\n\n ## ⏳Unreleased\n\n${{OPEN_COUNT}} \n",
-              "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}\n   - thanks to @${{AUTHOR}}\n   - Special thanks to the reviewers: ${{REVIEWERS}}",
+              "template": "All notable changes to this project will be documented in this file.\n\n## Changes #{{RELEASE_DIFF}}\n\n#{{CHANGELOG}}## 💬 Other\n\n#{{UNCATEGORIZED}}",
+              "pr_template": "- ##{{NUMBER}} #{{TITLE}} @#{{AUTHOR}}",
               "label_extractor": [
                 {
-                  "pattern": ".*(feat\\(${{ inputs.module }}\\)).*",
+                  "pattern": ".*(feat\\(${{ inputs.scope }}\\)).*",
                   "target": "$1",
                   "on_property": "title"
                 },
                 {
-                  "pattern": ".*(fix\\(${{ inputs.module }}\\)).*",
+                  "pattern": ".*(fix\\(${{ inputs.scope }}\\)).*",
                   "target": "$1",
                   "on_property": "title"
                 },
                 {
-                  "pattern": ".*(test\\(${{ inputs.module }}\\)).*",
+                  "pattern": ".*(test\\(${{ inputs.scope }}\\)).*",
                   "target": "$1",
                   "on_property": "title"
                 }
@@ -123,25 +124,17 @@ jobs:
         uses: thedoctor0/zip-release@0.6.2
         with:
           type: "zip"
-          filename: "${{ github.event.repository.name }}-${{ inputs.module }}-v${{ inputs.version }}.zip"
+          filename: "${{ github.event.repository.name }}-${{ inputs.project_name }}-v${{ inputs.version }}.zip"
           exclusions: "*.git* /*node_modules/* .editorconfig"
-          directory: ${{ inputs.module_dir }}
-
-      # - name: Archive Release tar
-      #   uses: thedoctor0/zip-release@0.6.2
-      #   with:
-      #     type: "tar"
-      #     filename: "${{ github.event.repository.name }}-mypkg-v${{ needs.versioning.outputs.sem_version }}.tar.gz"
-      #     directory: src/mymodule
-      #     exclusions: "${{ github.event.repository.name }}-mypkg-v${{ needs.versioning.outputs.sem_version }}.tar.gz"
+          directory: ${{ inputs.project_dir }}
 
       # Create release
       - name: Release Changelog
         uses: softprops/action-gh-release@v1
         with:
-          name: "${{ inputs.release_title }} (${{ env.NOW }})"
+          name: "${{ inputs.toTag }} (${{ env.NOW }})"
           body: ${{ steps.build_changelog.outputs.changelog }}
-          tag_name: ${{ inputs.module }}/v${{ inputs.version }}
+          tag_name: ${{ inputs.toTag }}
           token: ${{ secrets.GIT_TOKEN }}
           files: |
-            ${{ inputs.module_dir }}/${{ github.event.repository.name }}-${{ inputs.module }}-v${{ inputs.version }}.zip
+            ${{ inputs.project_dir }}/${{ github.event.repository.name }}-${{ inputs.project_name }}-v${{ inputs.version }}.zip

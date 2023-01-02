@@ -22,7 +22,7 @@ jobs:
     uses: ./.github/workflows/reusable_semversion.yml
     with:
       tag_prefix: ${{ inputs.tag_name }}/v
-      tag_release: true
+      tag_release: false
       module_path: ./src/mymodule
     secrets:
       GIT_TOKEN: ${{ secrets.TOKEN_PROTECTED_TAG }}
@@ -58,11 +58,11 @@ jobs:
     needs: [build_and_push, versioning]
     uses: ./.github/workflows/reusable_changelog.yml
     with:
-      module: mypkg
-      module_dir: src/mymodule
+      scope: module1
+      project_name: ${{ inputs.tag_name }}
+      project_dir: src/mymodule
       version: ${{ needs.versioning.outputs.sem_version }}
-      fromTag: mypkg/v${{ needs.versioning.outputs.prev_version }}
+      fromTag: ${{ inputs.tag_name }}/v${{ needs.versioning.outputs.prev_version }}
       toTag: ${{ needs.versioning.outputs.version }}
-      release_title: ${{ needs.versioning.outputs.version }}
     secrets:
-      GIT_TOKEN: ${{ secrets.TOKEN_PROTECTED_TAG }}
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
