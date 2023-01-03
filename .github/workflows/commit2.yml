@@ -42,7 +42,7 @@ jobs:
       #     error: "Failed to find fix in subject"
       #     one_pass_all_pass: "true"
 
-      - name: Check Commit Message For Jira Tag
+      - name: Check Commit Message For Jira Tag2
         uses: gsactions/commit-message-checker@v1
         with:
           pattern: "^AB#[0-9]+ (feat|test|fix).*"
