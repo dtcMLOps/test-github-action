@@ -1,0 +1,52 @@
+name: "Commit Message Check"
+on:
+  # push:
+  #   branches:
+  #     - feat/commit-checker
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-commit-message:
+    name: Check Commit Message
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get PR Commits
+        id: "get-pr-commits"
+        uses: tim-actions/get-pr-commits@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check Subject Line Length
+        uses: tim-actions/commit-message-checker-with-regex@v0.3.1
+        with:
+          commits: ${{ steps.get-pr-commits.outputs.commits }}
+          pattern: '^.{0,75}(\n.*)*$'
+          error: "Subject too long (max 75)"
+
+      - name: Check Body Line Length
+        if: ${{ success() || failure() }}
+        uses: tim-actions/commit-message-checker-with-regex@v0.3.1
+        with:
+          commits: ${{ steps.get-pr-commits.outputs.commits }}
+          pattern: '^.+(\n.{0,72})*$'
+          error: "Body line too long (max 72)"
+
+      # - name: Check subsystem
+      #   if: ${{ success() || failure() }}
+      #   uses: tim-actions/commit-message-checker-with-regex@v0.3.1
+      #   with:
+      #     commits: ${{ steps.get-pr-commits.outputs.commits }}
+      #     pattern: "AB#[0-9]+ (feat|fix)$"
+      #     error: "Failed to find fix in subject"
+      #     one_pass_all_pass: "true"
+
+      - name: Check Commit Message For Jira Tag
+        uses: gsactions/commit-message-checker@v1
+        with:
+          pattern: "^AB#[0-9]+ (feat|test|fix).*"
+          error: 'You need at least one "JIRA: KAT-<issue number>" line below the title line. If there is no jira associated with this PR/commit you may also use JIRA: NOJIRA. Please see docs/contributing/git-style.rst#submitting-changes for examples'
+          excludeTitle: "false"
+          checkAllCommitMessages: "true"
+          accessToken: ${{ secrets.GITHUB_TOKEN }}
