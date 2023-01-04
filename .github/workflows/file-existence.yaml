@@ -1,0 +1,40 @@
+# .github/workflows/version.yml
+name: File Existence
+
+on:
+  push:
+    branches:
+      - feat/files-existence
+  pull_request:
+    branches:
+      - empty
+
+jobs:
+  version:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0 # fetch the whole repo history
+
+      - name: "Check file existence"
+        id: check_files
+        uses: andstor/file-existence-action@v2
+        with:
+          files: "**/*.ipynb"
+
+      - name: File exists
+        if: steps.check_files.outputs.files_exists == 'true'
+        # Only runs if all of the files exists
+        run: |
+          echo Notebook files exists!
+          exit 1
+
+      - name: File Not exists
+        if: steps.check_files.outputs.files_exists == 'false'
+        # Only runs if all of the files exists
+        run: |
+          echo Notebook files not found!
+          exit 0
