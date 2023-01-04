@@ -18,16 +18,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check Subject Line Length
-        uses: gsactions/commit-message-checker@v2
-        with:
-          pattern: "^.{0,72}(\n.*)*$"
-          error: "The maximum line length of 72 characters is exceeded."
-          excludeDescription: "true" # optional: this excludes the description body of a pull request
-          excludeTitle: "true" # optional: this excludes the title of a pull request
-          checkAllCommitMessages: "true" # optional: this checks all commits associated with a pull request
-          accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
-
       - name: Check Commit Message Type
         if: ${{ success() || failure() }}
         uses: gsactions/commit-message-checker@v1
@@ -38,7 +28,17 @@ jobs:
           checkAllCommitMessages: "true"
           accessToken: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check Subject Dont Capitalize
+      - name: Check Subject Line Length
+        uses: gsactions/commit-message-checker@v2
+        with:
+          pattern: "^.{0,51}(\n.*)*$"
+          error: "The maximum line length of 50 characters is exceeded."
+          excludeDescription: "true" # optional: this excludes the description body of a pull request
+          excludeTitle: "true" # optional: this excludes the title of a pull request
+          checkAllCommitMessages: "true" # optional: this checks all commits associated with a pull request
+          accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+
+      - name: Check Subject No Capitalize
         if: ${{ success() || failure() }}
         uses: gsactions/commit-message-checker@v1
         with:
