@@ -1,0 +1,39 @@
+# MAIN repository deployment workflow
+# This workflow is used to generate the changelog related to the GHActions
+name: "CD Pipeline MAIN"
+
+on:
+  # event to trigger workflow manually
+  workflow_dispatch:
+    inputs:
+      tag_release:
+        description: "Release tag ?"
+        required: false
+        type: boolean
+
+jobs:
+  # call semantic version reusable workflow
+  versioning:
+    name: CD
+    uses: ./.github/workflows/reusable_semversion.yml
+    with:
+      tag_prefix: v
+      tag_release: ${{ inputs.tag_release }}
+      module_path: ./.github/workflows
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # call changelog reusable workflow
+  changelog_generator:
+    name: CD
+    needs: [versioning]
+    uses: ./.github/workflows/reusable_changelog.yml
+    with:
+      scope: ghaction
+      project_name: workflows
+      project_dir: .github/workflows
+      version: ${{ needs.versioning.outputs.sem_version }}
+      fromTag: v${{ needs.versioning.outputs.prev_version }}
+      toTag: ${{ needs.versioning.outputs.version }}
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
