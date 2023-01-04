@@ -1,8 +1,5 @@
 name: "Commit Message Check"
 on:
-  # push:
-  #   branches:
-  #     - feat/commit-checker
   pull_request:
     branches:
       - main
@@ -18,8 +15,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check Commit Message Type
-        if: ${{ success() || failure() }}
+      - name: Check Subject Message Type
         uses: gsactions/commit-message-checker@v1
         with:
           pattern: "^AB#[0-9]+ (feat|fix|test|docs|chore|style|refactor|ci|cd).*"
@@ -29,6 +25,7 @@ jobs:
           accessToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check Subject Line Length
+        if: ${{ success() || failure() }}
         uses: gsactions/commit-message-checker@v2
         with:
           pattern: "^.{0,51}(\n.*)*$"
@@ -42,7 +39,7 @@ jobs:
         if: ${{ success() || failure() }}
         uses: gsactions/commit-message-checker@v1
         with:
-          pattern: "^AB#[0-9]+ (feat|fix|test|docs|chore|style|refactor|ci|cd): [a-z].*"
+          pattern: ".*: [a-z].*"
           error: "Don't capitalize the first letter in the commit subject"
           excludeTitle: "true"
           checkAllCommitMessages: "true"
