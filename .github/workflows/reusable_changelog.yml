@@ -56,7 +56,7 @@ jobs:
       # Build changelog
       - name: Build Changelog
         id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@v3.5.0
+        uses: mikepenz/release-changelog-builder-action@v3.6.0
         with:
           fromTag: ${{ inputs.fromTag }}
           toTag: ${{ inputs.toTag }}
@@ -72,9 +72,11 @@ jobs:
                   "labels": [
                     "feat(${{ inputs.scope }})"
                   ],
+                  "exclude_labels": ["--rcba-open"],
+                  "exhaustive": true,
                   "rules": [
                     {
-                      "pattern": "open",
+                      "pattern": "merged",
                       "on_property": "status",
                       "flags": "gu"
                     }
@@ -85,9 +87,11 @@ jobs:
                   "labels": [
                     "fix(${{ inputs.scope }})"
                   ],
+                  "exclude_labels": ["--rcba-open"],
+                  "exhaustive": true,
                   "rules": [
                     {
-                      "pattern": "open",
+                      "pattern": "merged",
                       "on_property": "status",
                       "flags": "gu"
                     }
@@ -98,20 +102,36 @@ jobs:
                   "labels": [
                     "test(${{ inputs.scope }})"
                   ],
+                  "exclude_labels": ["--rcba-open"],
+                  "exhaustive": true,
                   "rules": [
                     {
-                      "pattern": "open",
+                      "pattern": "merged",
+                      "on_property": "status",
+                      "flags": "gu"
+                    }
+                  ]
+                },
+                {
+                  "title": " ",
+                  "labels": [],
+                  "exclude_labels": ["--rcba-open"],
+                  "exhaustive": true,
+                  "rules": [
+                    {
+                      "pattern": "merged",
                       "on_property": "status",
                       "flags": "gu"
                     }
                   ]
                 }
-              ],              
+                
+              ],
               "sort": {
                 "order": "ASC",
                 "on_property": "mergedAt"
               },
-              "template": "All notable changes to this project will be documented in this file.\n\n## Changes #{{RELEASE_DIFF}}\n\n#{{CHANGELOG}}## 💬 Other\n\n#{{UNCATEGORIZED}}\nUnrelease\n#{{OPEN}}\n${{LABELS}}",
+              "template": "All notable changes to this project will be documented in this file.\n\n## Changes #{{RELEASE_DIFF}}\n\n#{{CHANGELOG}}\n## 💬 Other\n\n#{{UNCATEGORIZED}}",
               "pr_template": "- ##{{NUMBER}} #{{TITLE}} @#{{AUTHOR}}",
               "label_extractor": [
                 {
