@@ -62,7 +62,7 @@ jobs:
           toTag: ${{ inputs.toTag }}
           fetchReviewers: true
           fetchReleaseInformation: true
-          includeOpen: false
+          includeOpen: true
           failOnError: true
           configurationJson: |
             {
@@ -71,26 +71,47 @@ jobs:
                   "title": "## 🚀 Features",
                   "labels": [
                     "feat(${{ inputs.scope }})"
+                  ],
+                  "rules": [
+                    {
+                      "pattern": "open",
+                      "on_property": "status",
+                      "flags": "gu"
+                    }
                   ]
                 },
                 {
                   "title": "## 🐛 Fixes",
                   "labels": [
                     "fix(${{ inputs.scope }})"
+                  ],
+                  "rules": [
+                    {
+                      "pattern": "open",
+                      "on_property": "status",
+                      "flags": "gu"
+                    }
                   ]
                 },
                 {
                   "title": "## 🧪 Tests",
                   "labels": [
                     "test(${{ inputs.scope }})"
+                  ],
+                  "rules": [
+                    {
+                      "pattern": "open",
+                      "on_property": "status",
+                      "flags": "gu"
+                    }
                   ]
                 }
-              ],
+              ],              
               "sort": {
                 "order": "ASC",
                 "on_property": "mergedAt"
               },
-              "template": "All notable changes to this project will be documented in this file.\n\n## Changes #{{RELEASE_DIFF}}\n\n#{{CHANGELOG}}## 💬 Other\n\n#{{UNCATEGORIZED}}",
+              "template": "All notable changes to this project will be documented in this file.\n\n## Changes #{{RELEASE_DIFF}}\n\n#{{CHANGELOG}}## 💬 Other\n\n#{{UNCATEGORIZED}}\nUnrelease\n#{{OPEN}}\n#{{LABELS}}",
               "pr_template": "- ##{{NUMBER}} #{{TITLE}} @#{{AUTHOR}}",
               "label_extractor": [
                 {
