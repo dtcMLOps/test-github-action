@@ -1,0 +1,427 @@
+# Continuous integration workflow
+name: "Reusable CI Pipeline"
+
+on:
+  workflow_call:
+    inputs:
+      test_folder_directory:
+        required: false
+        type: string
+        default: "none"
+        description: "path to tests folder"
+      unit_test_directory:
+        required: false
+        type: string
+        default: "none"
+        description: "path to unit testing folder"
+      integration_test_directory:
+        required: false
+        type: string
+        default: "none"
+        description: "path to integration testing folder"
+      requirements_directory:
+        required: false
+        type: string
+        description: "path to module requirements"
+      sonar_project_dir:
+        required: true
+        type: string
+        description: "path to sonar-project.properties file in module"
+      python_test_versions:
+        default: "['3.8']"
+        required: false
+        type: string
+
+    secrets:
+      GIT_TOKEN:
+        required: true
+      SONAR_TOKEN:
+        required: true
+      ENV_VARS:
+        description: List of environment variables to set up, given in env=value format.
+        required: false
+
+env:
+  ENVVARS: ${{ secrets.ENV_VARS }}
+  REPO-NAME: ${{ github.event.repository.name }}
+
+permissions:
+  contents: read
+  issues: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  # style formatter validator
+  lint_validator:
+    runs-on: ubuntu-22.04
+    name: Lint Validator
+
+    steps:
+      # clones current repository
+      - name: Checkout current repository
+        uses: actions/checkout@v3
+
+      # install python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+          #cache: "pip" # caching pip dependencies
+
+      # install lint tools
+      - name: Install lint tools
+        run: |
+          pip install black==22.3.0 flake8==3.8.4 isort==5.7.0 interrogate==1.4.0
+
+      # run black formatter
+      - name: Run Black
+        run: |
+          python3 -m black --check ${{inputs.sonar_project_dir}}
+
+      # run flake linter
+      - name: Run Flake8
+        run: |
+          python3 -m flake8 ${{ inputs.sonar_project_dir }}
+
+      # run isort validator
+      - name: Run Isort
+        run: |
+          python3 -m isort --check-only --profile black ${{ inputs.sonar_project_dir }}
+
+      # run docstrings validator
+      - name: Run Interrogate
+        run: |
+          python3 -m interrogate ${{ inputs.sonar_project_dir }}
+
+  # commit message validator
+  commit_validator:
+    name: Commit Validator
+    runs-on: ubuntu-22.04
+
+    steps:
+      # clones current repository
+      - name: Checkout current repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # clones ab-inbev-analytics repository
+      - name: Checkout utility_scripts repository
+        uses: actions/checkout@v3
+        with:
+          repository: ab-inbev-analytics/utility_scripts
+          path: utility_scripts
+          token: ${{ secrets.GIT_TOKEN }}
+
+      # runs commit validation script
+      - name: Running the Commit validation script
+        run: |
+          sh ${GITHUB_WORKSPACE}/utility_scripts/scripts/ci_standards/message_checker.sh ${{ github.base_ref }}
+
+  # notebook files validator
+  notebook_validator:
+    runs-on: ubuntu-22.04
+    name: Notebook Validator
+
+    steps:
+      # clones current repository
+      - name: Checkout current repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # clones ab-inbev-analytics repository
+      - name: Checkout utility_scripts repository
+        uses: actions/checkout@v3
+        with:
+          repository: ab-inbev-analytics/utility_scripts
+          path: utility_scripts
+          token: ${{ secrets.GIT_TOKEN }}
+
+      # runs commit validation script
+      - name: Running the Commit validation script
+        run: |
+          sh ${GITHUB_WORKSPACE}/utility_scripts/scripts/ci_standards/extension_check.sh ${{ github.base_ref }}
+
+  # test folder existence validator
+  test_folder_validator:
+    name: Tests Files Validator
+    runs-on: ubuntu-22.04
+
+    outputs:
+      test_files_exist: ${{ steps.step_check_if_test_files_exist.outputs.test_files_exist }}
+
+    steps:
+      # clones current repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # check if test_*.py exists
+      - name: Check if test files exist
+        id: step_check_if_test_files_exist
+        run: |
+          if [[ $(find ${{inputs.test_folder_directory}} -type f -name "test*.py") ]]
+          then
+            echo "test files exist"
+            echo "test_files_exist=yes" >> $GITHUB_OUTPUT
+          else
+            echo "no test files exist"
+            echo "test_files_exist=no" >> $GITHUB_OUTPUT
+          fi
+
+      # display check result
+      - name: Display value of test_files_exist
+        run: echo ${{ steps.step_check_if_test_files_exist.outputs.test_files_exist }}
+
+  # unit integration testing validator
+  run_unit_int_validator:
+    name: "Test (Python ${{ matrix.python-version }})"
+    runs-on: ubuntu-22.04
+    needs:
+      [
+        lint_validator,
+        notebook_validator,
+        test_folder_validator,
+        commit_validator,
+      ]
+    if: needs.test_folder_validator.outputs.test_files_exist == 'yes'
+
+    strategy:
+      #If true, GitHub cancels all in-progress jobs if any matrix job fails.
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(inputs.python_test_versions) }}
+
+    steps:
+      # clones current repository
+      - name: Checkout current repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # set environment variables if provided
+      - name: Set environment variables
+        if: "${{ env.ENVVARS != '' }}"
+        run: |
+          for i in "${{ secrets.ENV_VARS }}"
+          do
+            printf "%s\n" $i >> $GITHUB_ENV
+          done
+
+      # install python
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        id: setup_python
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip" # caching pip dependencies
+          cache-dependency-path: |
+            **/requirements*.txt
+
+      # install project depedencies
+      - name: Install dependencies
+        run: |
+          pip install pytest==7.2.0 pytest-cov==4.0.0
+          pip install -r ${{inputs.requirements_directory}}
+
+      # run unit tests
+      - name: Running Unit Tests
+        if: inputs.unit_test_directory != 'none'
+        run: |
+          python3 -m pytest ${{inputs.unit_test_directory}} -vv -s \
+          --doctest-modules \
+          --junitxml=coverage/xunit-result-${{ matrix.python-version }}.xml
+
+      # run integration tests
+      - name: Running Integration Tests
+        if: inputs.integration_test_directory != 'none'
+        run: |
+          python3 -m pytest ${{inputs.integration_test_directory}} \
+          --doctest-modules \
+          --junitxml=junit/inttest-${{ matrix.python-version }}.xml
+
+      # generate coverage report
+      - name: Running Coverage report
+        if: inputs.test_folder_directory != 'none'
+        run: |
+          python3 -m pytest ${{inputs.test_folder_directory}} -vv -s \
+          --doctest-modules \
+          --cov=. \
+          --cov-report=xml:coverage-${{ matrix.python-version }}.xml \
+          --cov-report=html:coverage_report-${{ matrix.python-version }} \
+          --cov-report term-missing \
+          --cov-config=.coveragerc
+
+      - name: Generating SonarCloud Coverage Report
+        if: inputs.unit_test_directory != 'none'
+        run: |
+          coverage xml -i -o coverage-${{ matrix.python-version }}.xml
+
+      # creates coverage report for banner in pull request.
+      - name: Generating coverage file for PR BOT comment
+        if: inputs.test_folder_directory != 'none'
+        run: |
+          python3 -m pytest ${{inputs.test_folder_directory}} -vv -s \
+          --junitxml=pytest-${{ matrix.python-version }}.xml \
+          --cov-report term-missing \
+          --cov-config=.coveragerc \
+          --cov=${GITHUB_WORKSPACE}/src | tee pytest-coverage-${{ matrix.python-version }}.txt
+
+      # pull coverage report comment
+      - name: Running PR BOT comment for coverage
+        if: inputs.unit_test_directory != 'none'
+        uses: MishaKav/pytest-coverage-comment@v1.1.37
+        with:
+          pytest-coverage-path: ./pytest-coverage-${{ matrix.python-version }}.txt
+          title: Unit Tests Coverage Report for Python-${{ matrix.python-version }} - ${{github.workspace}}
+          badge-title: Unit Tests Coverage
+          hide-badge: false
+          hide-report: false
+          create-new-comment: false
+          hide-comment: false
+          junitxml-path: coverage/xunit-result-${{ matrix.python-version }}.xml
+          junitxml-title: "Coverage Report Unit Tests for Python-${{ matrix.python-version }}"
+
+      # upload unit test results to GitHub
+      - name: Upload Unit Test Report
+        if: inputs.unit_test_directory != 'none'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Unit Test Results (Python ${{ matrix.python-version }})
+          path: coverage/xunit-result-${{ matrix.python-version }}.xml
+          retention-days: 7
+
+      # upload integration test results to GitHub
+      - name: Upload Integration Test Report
+        if: inputs.integration_test_directory != 'none'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Integration Test Results (Python ${{ matrix.python-version }})
+          path: junit/inttest-${{ matrix.python-version }}.xml
+          retention-days: 7
+
+      # Upload coverage report for sonar.
+      - name: Upload Coverage Report SonarCloud
+        if: inputs.unit_test_directory != 'none'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Coverage Report SonarCloud (Python ${{ matrix.python-version }})
+          path: coverage-${{ matrix.python-version }}.xml
+          retention-days: 7
+
+      # upload coverage results as HTML to GitHub
+      - name: Upload Coverage Report HTML
+        if: inputs.unit_test_directory != 'none'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Coverage Report HTML (Python ${{ matrix.python-version }})
+          path: coverage_report-${{ matrix.python-version }}
+          retention-days: 7
+
+  publish_test_results:
+    name: Publish Tests Results
+    needs: run_unit_int_validator
+    runs-on: ubuntu-22.04
+    if: always()
+    steps:
+      # download pytest reports from artifact registry
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      # publishes unit test results
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          junit_files: artifacts/**/xunit-result*.xml
+          check_name: "Unit Test Results"
+
+      # publishes integration test results
+      - name: Publish Integration Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          junit_files: artifacts/**/inttest*.xml
+          check_name: "Integration Test Results"
+
+  sonarcloudScanWithTests:
+    name: SonarCloudScanTests
+    runs-on: ubuntu-22.04
+    needs: publish_test_results
+
+    strategy:
+      #If true, GitHub cancels all in-progress jobs if any matrix job fails.
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(inputs.python_test_versions) }}
+
+    steps:
+      # clones current repository
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # Download coverage report for sonar.
+      - name: Download Coverage Report SonarCloud
+        if: inputs.unit_test_directory != 'none'
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: Coverage Report SonarCloud (Python ${{ matrix.python-version }})
+
+      # Download unit tests coverage report for banner in pull request.
+      - name: Download Unit Test Report
+        if: inputs.unit_test_directory != 'none'
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: Unit Test Results (Python ${{ matrix.python-version }})
+
+      - name: Override Coverage Source Path for SonarCloud
+        if: inputs.unit_test_directory != 'none'
+        # run: sed -i "s+$PWD/src/++g" ./coverage-${{ matrix.python-version }}.xml
+        run: |
+          sed -i "s/<source>\/home\/runner\/work\/${{ env.REPO-NAME }}\/${{ env.REPO-NAME }}<\/source>/<source>\/github\/workspace<\/source>/g" ./coverage-${{ matrix.python-version }}.xml
+
+      # run SonarCloud scan
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ inputs.sonar_project_dir }}
+          args: >
+            -Dsonar.python.version=${{ matrix.python-version }}
+            -Dsonar.python.coverage.reportPaths=coverage-${{ matrix.python-version }}.xml
+            -Dsonar.python.xunit.reportPath=xunit-result-${{ matrix.python-version }}.xml
+            -Dsonar.python.xunit.skipDetails=true
+
+  sonarcloudScanNoTests:
+    name: SonarCloudScan
+    needs:
+      [
+        lint_validator,
+        notebook_validator,
+        test_folder_validator,
+        commit_validator,
+      ]
+    if: needs.test_folder_validator.outputs.test_files_exist == 'no'
+    runs-on: ubuntu-22.04
+    steps:
+      # clones current repository
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # run SonarCloud scan
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ inputs.sonar_project_dir }}
