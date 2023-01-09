@@ -106,18 +106,52 @@ jobs:
         with:
           fetch-depth: 0
 
-      # clones ab-inbev-analytics repository
-      - name: Checkout utility_scripts repository
-        uses: actions/checkout@v3
+      # validate message type: feat|fix|docs etc
+      - name: Check Subject Message Type
+        uses: gsactions/commit-message-checker@v2.0.0
         with:
-          repository: ab-inbev-analytics/utility_scripts
-          path: utility_scripts
-          token: ${{ secrets.GIT_TOKEN }}
+          pattern: "^AB#[0-9]+ (feat|feat!|fix|test|docs|chore|style|refactor|ci|cd).*"
+          error: 'You need to follow conventional commit type "feat|feat!|fix|test|docs|chore|style|refactor|ci|cd" in the title line. Please see https://github.com/angular/angular/blob/68a6a07/CONTRIBUTING.md#-commit-message-format for examples'
+          excludeTitle: "true"
+          excludeDescription: "true"
+          checkAllCommitMessages: "true"
+          accessToken: ${{ secrets.GIT_TOKEN }}
 
-      # runs commit validation script
-      - name: Running the Commit validation script
-        run: |
-          sh ${GITHUB_WORKSPACE}/utility_scripts/scripts/ci_standards/message_checker.sh ${{ github.base_ref }}
+      # validate message length to 50 characters max.
+      - name: Check Subject Line Length
+        if: ${{ success() || failure() }}
+        uses: gsactions/commit-message-checker@v2.0.0
+        with:
+          pattern: "^.{0,51}(\n.*)*$"
+          error: "The maximum line length of 50 characters is exceeded."
+          excludeDescription: "true" # optional: this excludes the description body of a pull request
+          excludeTitle: "true" # optional: this excludes the title of a pull request
+          checkAllCommitMessages: "true" # optional: this checks all commits associated with a pull request
+          accessToken: ${{ secrets.GIT_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+
+      # validate message has not capitalize letter at the beginning
+      - name: Check Subject No Capitalize
+        if: ${{ success() || failure() }}
+        uses: gsactions/commit-message-checker@v2.0.0
+        with:
+          pattern: ".*: [a-z].*"
+          error: "Don't capitalize the first letter in the commit subject"
+          excludeTitle: "true"
+          excludeDescription: "true"
+          checkAllCommitMessages: "true"
+          accessToken: ${{ secrets.GIT_TOKEN }}
+
+      # validate message has not dot at the end
+      - name: Check Subject No Dot
+        if: ${{ success() || failure() }}
+        uses: gsactions/commit-message-checker@v2.0.0
+        with:
+          pattern: "[^\\.]$"
+          error: "Don't use dot (.) at the end of the commit subject"
+          excludeTitle: "true"
+          excludeDescription: "true"
+          checkAllCommitMessages: "true"
+          accessToken: ${{ secrets.GIT_TOKEN }}
 
   # notebook files validator
   notebook_validator:
