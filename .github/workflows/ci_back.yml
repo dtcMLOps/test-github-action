@@ -6,7 +6,7 @@ on:
       - main
     types: [opened, reopened, synchronize]
     paths:
-      - src/api/backend/**
+      - src/mymodule/**
   workflow_dispatch:
 
 jobs:
@@ -18,5 +18,5 @@ jobs:
       sonar_project_dir: ./src/mymodule
 
     secrets:
-      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GIT_TOKEN: ${{ secrets.UTILITY_SCRIPTS_TOKEN }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_BACKEND }}
