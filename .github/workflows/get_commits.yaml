@@ -1,0 +1,23 @@
+name: Get Commits
+
+on:
+  # push:
+  #   branches:
+  #     - feat/changelog-new-release
+  pull_request:
+    branches:
+      - main
+run-name: Running action by @${{ github.actor }}
+jobs:
+  lint_and_test:
+    runs-on: ubuntu-22.04
+    name: Get commits
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # fetch the whole repo history
+
+      - name: Echo Commits job
+        run: |
+          echo "${{ github.event.push.commits }}"
