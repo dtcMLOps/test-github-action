@@ -7,6 +7,8 @@ on:
   pull_request:
     branches:
       - main
+env:
+  GH_TOKEN: ${{ github.token }}
 run-name: Running action by @${{ github.actor }}
 jobs:
   lint_and_test:
@@ -16,8 +18,7 @@ jobs:
       - name: Checkout current repository
         uses: actions/checkout@v3
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0 # fetch the whole repo history
 
-      - name: Echo Commits job
-        run: |
-          echo "${{ github.event.push.commits }}"
+      - run: gh pr view 19 --json commits | jq ".[0].author"

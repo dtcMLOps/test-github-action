@@ -1,0 +1,60 @@
+name: CI Pipeline MAIN
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
+    paths-ignore:
+      - "src/**"
+
+jobs:
+  # commit message validator
+  commit_validator:
+    name: CI / Commit Validator
+    runs-on: ubuntu-22.04
+
+    steps:
+      # clones current repository
+      - name: Checkout current repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # clones ab-inbev-analytics repository
+      - name: Checkout utility_scripts repository
+        uses: actions/checkout@v3
+        with:
+          repository: ab-inbev-analytics/utility_scripts
+          path: utility_scripts
+          token: ${{ secrets.PAT_TOKEN_LH_MAZ_POP }}
+
+      # runs commit validation script
+      - name: Running the Commit validation script
+        run: |
+          sh ${GITHUB_WORKSPACE}/utility_scripts/scripts/ci_standards/message_checker.sh ${{ github.base_ref }}
+
+  # notebook files validator
+  notebook_validator:
+    runs-on: ubuntu-22.04
+    name: CI / Notebook Validator
+
+    steps:
+      # clones current repository
+      - name: Checkout current repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # clones ab-inbev-analytics repository
+      - name: Checkout utility_scripts repository
+        uses: actions/checkout@v3
+        with:
+          repository: ab-inbev-analytics/utility_scripts
+          path: utility_scripts
+          token: ${{ secrets.PAT_TOKEN_LH_MAZ_POP }}
+
+      # runs commit validation script
+      - name: Running the Commit validation script
+        run: |
+          sh ${GITHUB_WORKSPACE}/utility_scripts/scripts/ci_standards/extension_check.sh ${{ github.base_ref }}
