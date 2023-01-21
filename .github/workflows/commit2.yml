@@ -13,6 +13,7 @@ jobs:
       - name: Checkout current repository
         uses: actions/checkout@v3
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: Check Subject Message Type
@@ -23,6 +24,33 @@ jobs:
           excludeTitle: "true"
           checkAllCommitMessages: "true"
           accessToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check Subject Body Space
+        if: ${{ success() || failure() }}
+        uses: gsactions/commit-message-checker@v2.0.0
+        with:
+          pattern: "^[^\n]+(\n\n.+)?$"
+          flags: "s"
+          error: "Commit header and body must be separated by one blank line"
+          excludeTitle: "true"
+          excludeDescription: "true"
+          checkAllCommitMessages: "true"
+          accessToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check Subject Message Duplicity
+        if: ${{ success() || failure() }}
+        run: |
+          max_commit=$(git log origin/${{ github.event.pull_request.base.ref }}.. --oneline | cut -c 9- | sort | uniq -c | sort -n | tail -1 | grep -qE '^\s*[1-1]+'; echo $?)
+          if [ $max_commit == 0 ]
+          then
+            echo "Hey All commit looks good. 👌"
+            exit 0
+          else
+            echo "Commit List:"
+            git log origin/${{ github.event.pull_request.base.ref }}.. --oneline | cut -c 9- | sort | uniq -c | sort -n 
+            { echo "Hey you have duplicated commit messages, you should reword or squash your commits!" 2>&1 ; exit $max_commit; }
+          fi
+        shell: bash
 
       - name: Check Subject Line Length
         if: ${{ success() || failure() }}
@@ -76,3 +104,8 @@ jobs:
           excludeDescription: "true"
           checkAllCommitMessages: "false"
           accessToken: ${{ secrets.GITHUB_TOKEN }}
+# https://dzone.com/articles/counting-duplicate-commit-messages
+# https://stackoverflow.com/questions/16974204/how-to-get-commit-history-for-just-one-branch
+# https://stackoverflow.com/questions/62334334/get-branch-commits-in-a-github-action
+# https://stackoverflow.com/questions/71231042/github-getting-last-20-commits-in-on-master-branch-using-git-log-when-on-another
+# https://stackoverflow.com/questions/15993062/bash-scripting-missing
