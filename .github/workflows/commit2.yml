@@ -54,3 +54,25 @@ jobs:
           excludeTitle: "true"
           checkAllCommitMessages: "true"
           accessToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check PR Title
+        if: ${{ success() || failure() }}
+        uses: gsactions/commit-message-checker@v1
+        with:
+          pattern: "^AB#[0-9]+ (feat|fix|test|docs|chore|style|refactor|ci|cd)\\((back|bees|front|mlflow|ghaction)\\).*"
+          error: "Bad PR title, format should be AB#Number type(scope): message"
+          excludeTitle: "false"
+          excludeDescription: "true"
+          checkAllCommitMessages: "false"
+          accessToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check PR Title Length
+        if: ${{ success() || failure() }}
+        uses: gsactions/commit-message-checker@v1
+        with:
+          pattern: "^.{0,51}(\n.*)*$"
+          error: "Bad PR title, the maximum line length of 50 characters is exceeded."
+          excludeTitle: "false"
+          excludeDescription: "true"
+          checkAllCommitMessages: "false"
+          accessToken: ${{ secrets.GITHUB_TOKEN }}
