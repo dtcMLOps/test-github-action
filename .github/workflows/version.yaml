@@ -23,7 +23,7 @@ jobs:
           ref: ${{ github.head_ref }} # checkout the correct branch name
           fetch-depth: 0 # fetch the whole repo history
 
-      - uses: paulhatch/semantic-version@v5.0.0-beta
+      - uses: paulhatch/semantic-version@v5.0.3
         id: version
         with:
           # The prefix to use to identify tags
