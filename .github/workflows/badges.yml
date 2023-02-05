@@ -1,7 +1,7 @@
 name: Update Badge
 
 on:
-  push:
+  # push:
   pull_request:
 
 jobs:
@@ -25,8 +25,56 @@ jobs:
           message: World
           color: orange
 
-      - uses: NejcZdovc/comment-pr@v2
+      # - uses: NejcZdovc/comment-pr@v2
+      #   with:
+      #     file: "results.html"
+      #   env:
+      #     GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      # - name: comment PR
+      #   uses: machine-learning-apps/pr-comment@master
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     path: "results.html"
+
+      # install python
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        id: setup_python
         with:
-          file: "results.html"
+          python-version: "3.9"
+
+      # install project depedencies
+      - name: Install dependencies
+        run: |
+          pip install pytest==7.2.0 pytest-cov==4.0.0 pytest-md pytest-emoji pytest-html
+          pytest --html "results.html"
+
+      # - name: Run pytest
+      #   uses: pavelzw/pytest-action@v2
+      #   with:
+      #     verbose: true
+      #     emoji: true
+      #     job-summary: true
+      #     click-to-expand: true
+      #     report-title: 'Test Report'
+
+      
+
+      - name: Convert HTML to Markdown
+        id: html2markdown
+        if: always()
+        uses: rknj/html2markdown@v1.1.0
+        with:
+          html-file: "results.html"
+
+      - name: comment PR
+        run: ls
+
+      - name: comment PR
+        uses: machine-learning-apps/pr-comment@master
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          path: ${{ steps.html2markdown.outputs.markdown-file }}
