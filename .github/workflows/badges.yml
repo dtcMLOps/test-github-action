@@ -2,6 +2,7 @@ name: Update Badge
 
 on:
   push:
+  pull_request:
 
 jobs:
   create_badge:
@@ -23,3 +24,9 @@ jobs:
           label: Hello
           message: World
           color: orange
+
+      - uses: NejcZdovc/comment-pr@v2
+        with:
+          file: "results.html"
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
