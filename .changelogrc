@@ -1,52 +1,132 @@
 {
-  "categories": [
-    {
-      "title": "## 🚀 Features",
-      "labels": [
-        "feat(module1)"
-      ]
+    "categories": [
+        {
+            "title": "## 🚀 Features",
+            "labels": [
+                "feat"
+            ],
+            "exhaustive": true
+        },
+        {
+            "title": "## 🐛 Fixes",
+            "labels": [
+                "fix"
+            ],
+            "exhaustive": true
+        },
+        {
+            "title": "## 🧪 Tests",
+            "labels": [
+                "test"
+            ],
+            "exhaustive": true
+        },
+        {
+            "title": "## 🧵 Style",
+            "labels": [
+                "style"
+            ],
+            "exhaustive": true
+        },
+        {
+            "title": "## 📚 Documentation",
+            "labels": [
+                "docs"
+            ],
+            "exhaustive": true
+        },
+        {
+            "title": "## 🏋️‍♂️ Refactor",
+            "labels": [
+                "refactor"
+            ],
+            "exhaustive": true
+        },
+        {
+            "title": "## 📐 CI Pipelines",
+            "labels": [
+                "ci"
+            ],
+            "exhaustive": true
+        },
+        {
+            "title": "## 🪜 CD Pipelines",
+            "labels": [
+                "cd"
+            ],
+            "exhaustive": true
+        },
+        {
+            "title": "## 🚿 Chores",
+            "labels": [
+                "chore"
+            ],
+            "exhaustive": true
+        },
+        {
+            "title": "## 🍔 Builds",
+            "labels": [
+                "build"
+            ],
+            "exhaustive": true
+        }
+    ],
+    "sort": {
+        "order": "ASC",
+        "on_property": "mergedAt"
     },
-    {
-      "title": "## 🐛 Fixes",
-      "labels": [
-        "fix(module1)"
-      ]
-    },
-    {
-      "title": "## 🧪 Tests",
-      "labels": [
-        "test(module1)"
-      ]
-    },
-    {
-      "title": "## 🧪 Docs 🪄 Magic",
-      "labels": [
-        "docs(module1)"
-      ],
-      "exhaustive": true
-    }
-  ],
-  "sort": {
-    "order": "ASC",
-    "on_property": "mergedAt"
-  },
-  "template": "All notable changes to this project will be documented in this file. \n\n ## Changes ${{RELEASE_DIFF}} \n\n${{CHANGELOG}}\n\n## 💬 Other\n\n${{UNCATEGORIZED}}\n\n ## ⏳Unreleased\n\n${{OPEN_COUNT}} \n",
-  "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}\n   - thanks to @${{AUTHOR}}\n   - Special thanks to the reviewers: ${{REVIEWERS}}",
-  "label_extractor": [
-    {
-      "pattern": ".*(feat\\(module1\\)).*",
-      "target": "$1",
-      "on_property": "title"
-    },
-    {
-      "pattern": ".*(fix\\(module1\\)).*",
-      "target": "$1",
-      "on_property": "title"
-    },
-    {
-      "pattern": ".*(test\\(module1\\)).*",
-      "target": "$1",
-      "on_property": "title"
-    }
-  ]
+    "template": "All notable changes to this project will be documented in this file.\n\n## Changes ${{RELEASE_DIFF}}\n\n${{CHANGELOG}}",
+    "pr_template": "- #${{NUMBER}} ${{TITLE}} @${{AUTHOR}}",
+    "label_extractor": [
+        {
+            "pattern": ".*(feat).*",
+            "target": "$1",
+            "on_property": "title"
+        },
+        {
+            "pattern": "^AB#[0-9]+ \b(fix)\b",
+            "target": "$1",
+            "on_property": "title"
+        },
+        {
+            "pattern": ".*(test).*",
+            "target": "$1",
+            "on_property": "title"
+        },
+        {
+            "pattern": ".*(style).*",
+            "target": "$1",
+            "on_property": "title"
+        },
+        {
+            "pattern": "^AB#[0-9]+ \b(docs)\b",
+            "target": "$1",
+            "on_property": "title"
+        },
+        {
+            "pattern": ".*(refactor).*",
+            "target": "$1",
+            "on_property": "title"
+        },
+        {
+            "pattern": ".*(ci).*",
+            "target": "$1",
+            "on_property": "title"
+        },
+        {
+            "pattern": ".*(cd).*",
+            "target": "$1",
+            "on_property": "title"
+        },
+        {
+            "pattern": ".*(chore).*",
+            "target": "$1",
+            "on_property": "title"
+        },
+        {
+            "pattern": ".*(build).*",
+            "target": "$1",
+            "on_property": "title"
+        }
+    ]
 }

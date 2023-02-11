@@ -1,0 +1,18 @@
+REPOSITORY:
+  - .github/workflows/*
+
+documentation:
+  - README.md
+  - ./*.md
+
+BACKEND:
+  - src/api/backend/*
+
+FRONTEND:
+  - src/api/frontend/*
+
+BEES:
+  - src/bees_engage/*
+
+services:
+  - src/services/*
