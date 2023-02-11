@@ -1,0 +1,68 @@
+# This workflow is used to generate the changelog related to the GHActions
+name: "CD Pipeline"
+
+on:
+  # event to trigger workflow manually
+  workflow_dispatch:
+
+  # event to trigger workflow chronologically
+  schedule:
+          #  ┌───────────── minute (0 - 59)
+          #  │ ┌───────────── hour (0 - 23)
+          #  │ │ ┌───────────── day of the month (1 - 31)
+          #  │ │ │  ┌───────────── month (1 - 12)
+          #  │ │ │  │ ┌───────────── day of the week (0 - 6)
+          #  │ │ │  │ │                                   
+          #  │ │ │  │ │
+          #  │ │ │  │ │
+          #  * * *  * *
+    - cron: "5 6 3 * *"
+
+jobs:
+  # call reusable semantic version from ab-inbev-maz/lh-maz-workflows repository
+  call_reusable_semantic_versioning:
+    name: CD
+    uses: ./.github/workflows/reusable_semantic_version.yml
+    with:
+      tag_prefix: v
+      module_path: ./.github/workflows
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # call reusable create tag release from ab-inbev-maz/lh-maz-workflows repository
+  call_reusable_create_tag:
+    name: CD
+    needs: [call_reusable_semantic_versioning]
+    # if: ${{ needs.call_reusable_semantic_versioning.outputs.changed }}
+    uses: ./.github/workflows/reusable_create_tag.yml
+    with:
+      tag: ${{ needs.call_reusable_semantic_versioning.outputs.version }}
+      tag_message: "Releasing version ${{ needs.call_reusable_semantic_versioning.outputs.version }}"
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # call reusable changelog generator from ab-inbev-maz/lh-maz-workflows repository
+  call_reusable_changelog_generator:
+    name: CD
+    needs: [call_reusable_create_tag]
+    uses: ./.github/workflows/reusable_changelog_generator.yml
+    with:
+      scope: ghaction
+      fromTag: v${{ needs.versioning.outputs.prev_version }}
+      toTag: ${{ needs.versioning.outputs.version }}
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # call reusable create release from ab-inbev-maz/lh-maz-workflows repository
+  call_reusable_create_release:
+    name: CD
+    needs: [call_reusable_semantic_versioning, call_reusable_changelog_generator]
+    uses: ./.github/workflows/reusable_create_release.yml
+    with:
+      project_name: workflows
+      project_dir: .github/workflows
+      version: ${{ needs.call_reusable_semantic_versioning.outputs.sem_version }}
+      changelog: ${{ needs.call_reusable_changelog_generator.outputs.changelog }}
+      tag: ${{ needs.call_reusable_semantic_versioning.outputs.version }}
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
