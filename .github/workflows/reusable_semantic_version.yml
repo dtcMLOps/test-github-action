@@ -1,0 +1,105 @@
+# Semantic Versioning workflow
+# SemVersion number is based in the conventional commit types
+# bug,fix,style,docs,etc ------------> increase patch number
+# feat ----------------------------->  increase minor number
+# feat! -----------------------------> increase major number
+# version = major.minor.patch
+# e.g.
+# version = 0.1.0      --------> major=0 minor=1 patch=0
+# there is an option to enable BREAKING CHANGE in the commit footer as well
+# more info about this action can be found on https://github.com/PaulHatch/semantic-version
+name: "Reusable Semantic Versioning"
+
+on:
+  # trigger event to be called from a caller workflow
+  workflow_call:
+    inputs:
+      tag_prefix:
+        required: false
+        type: string
+        default: "v"
+        description: "tag name for the application or module"
+      module_path:
+        required: false
+        type: string
+        default: "."
+        description: "path to the application or module directory"
+
+    # output version to be used in the caller workflow
+    outputs:
+      version:
+        description: "tag version generated"
+        value: ${{ jobs.versioning_generator.outputs.version }}
+      prev_version:
+        description: "previous tag version"
+        value: ${{ jobs.versioning_generator.outputs.prev_version }}
+      sem_version:
+        description: "semantic version"
+        value: ${{ jobs.versioning_generator.outputs.semantic_version }}
+      changed_path:
+        description: "directory has a change"
+        value: ${{ jobs.versioning_generator.outputs.changed }}
+
+    secrets:
+      GIT_TOKEN:
+        required: false
+
+jobs:
+  # versioning system generator
+  versioning_generator:
+    runs-on: ubuntu-22.04
+    name: SemVer Generator
+
+    outputs:
+      version: ${{ steps.print_version.outputs.versiontag }}
+      prev_version: ${{ steps.print_version.outputs.prevsemver }}
+      semantic_version: ${{ steps.print_version.outputs.semver }}
+      changed: ${{ steps.print_version.outputs.changed }}
+
+    steps:
+      # clones current repository
+      - name: Checkout current repository
+        uses: actions/checkout@v3.3.0
+        with:
+          fetch-depth: 0 # fetch the whole repo history
+
+      # calculate version tag based on codebase commit types
+      - uses: paulhatch/semantic-version@v5.0.3
+        id: generated_version
+        with:
+          # The prefix to use to identify tags
+          tag_prefix: "${{ inputs.tag_prefix }}"
+          # A string which, if present in a git commit, indicates that a change represents a
+          # major (breaking) change, supports regular expressions wrapped with '/'
+          major_pattern: "/^AB#[0-9]+ feat!.*:.*$/"
+          # A string which indicates the flags used by the `major_pattern` regular expression. Supported flags: idgs
+          major_regexp_flags: "gm"
+          # Same as above except indicating a minor change, supports regular expressions wrapped with '/'
+          minor_pattern: "/^AB#[0-9]+ feat.*:.*$/"
+          # A string which indicates the flags used by the `minor_pattern` regular expression. Supported flags: idgs
+          minor_regexp_flags: "gm"
+          # A string to determine the format of the version output
+          version_format: "${major}.${minor}.${patch}-prerelease${increment}"
+          # Optional path to check for changes. If any changes are detected in the path the
+          # 'changed' output will true. Enter multiple paths separated by spaces.
+          change_path: ${{ inputs.module_path }}
+          # If this is set to true, *every* commit will be treated as a new version.
+          bump_each_commit: false
+          # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
+          search_commit_body: false
+
+      # print new tag version
+      - name: Echo tag version
+        id: print_version
+        run: |
+          echo "input_path: ${{ inputs.module_path }}"
+          echo "change_path: ${{ steps.generated_version.outputs.changed }}"
+          echo "Tag: ${{ steps.generated_version.outputs.version_tag }}"
+          echo "Semver: ${{ steps.generated_version.outputs.version }}"
+          echo "Prev tag: ${{ steps.generated_version.outputs.previous_version }}"
+          echo "Curr commit: ${{ steps.generated_version.outputs.current_commit }}"
+          echo "Prev commit: ${{ steps.generated_version.outputs.previous_commit }}"
+          echo "versiontag=${{ steps.generated_version.outputs.version_tag }}" >> $GITHUB_OUTPUT
+          echo "semver=${{ steps.generated_version.outputs.major }}.${{ steps.generated_version.outputs.minor }}.${{ steps.generated_version.outputs.patch }}" >> $GITHUB_OUTPUT
+          echo "prevsemver=${{ steps.generated_version.outputs.previous_version }}" >> $GITHUB_OUTPUT
+          echo "changed=${{ steps.generated_version.outputs.changed }}" >> $GITHUB_OUTPUT

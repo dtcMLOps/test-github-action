@@ -1,0 +1,93 @@
+# Reusable release generator workflow
+name: Reusable Create Release
+
+on:
+  # Event to call "import" this workflow from a caller a workflow
+  workflow_call:
+    # input string to be provided by the caller workflow
+    inputs:
+      # input parameter to define project name
+      project_name:
+        required: true
+        type: string
+        default: "none"
+        description: "module/sub-project name"
+      # input parameter to define project directory
+      project_dir:
+        required: true
+        type: string
+        default: "none"
+        description: "module/sub-project directory"
+      # input parameter to define project version
+      version:
+        required: false
+        type: string
+        default: "none"
+        description: "module semantic version"
+      # input parameter to define changelog description
+      changelog:
+        required: false
+        type: string
+        default: "none"
+        description: "describes the lower bound to process pull requests for"
+      # input parameter to define tag version to release
+      tag:
+        required: false
+        type: string
+        default: "none"
+        description: "describes the upper bound to process pull request for"
+
+    secrets:
+      # token to enable access to the repository
+      GIT_TOKEN:
+        required: true
+
+jobs:
+  # release generator job
+  release:
+    runs-on: ubuntu-22.04
+    name: Create Release
+    
+    steps:
+      # clones current repository
+      - name: Clone Repository
+        uses: actions/checkout@v3.3.0
+        with:
+          fetch-depth: 0 # fetch the whole repo history         
+
+      # Set release date as year-month-day: YYYY-MM-DD.
+      - name: Set Release Date
+        run: |
+          echo "NOW=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+          echo $NOW
+
+      # Archive release folder as ZIP
+      - name: Archive Release zip
+        uses: thedoctor0/zip-release@0.7.1
+        with:
+          type: "zip"
+          filename: "${{ github.event.repository.name }}-${{ inputs.project_name }}-v${{ inputs.version }}.zip"
+          exclusions: "*.git* /*node_modules/* .editorconfig"
+          directory: ${{ inputs.project_dir }}
+
+      # Archive release folder as TAR
+      - name: Archive Release tar
+        uses: thedoctor0/zip-release@0.7.1
+        with:
+          type: "tar"
+          filename: "${{ github.event.repository.name }}-${{ inputs.project_name }}-v${{ inputs.version }}.tar.gz"
+          exclusions: "*.git* /*node_modules/* .editorconfig"
+          directory: ${{ inputs.project_dir }}
+          custom: --ignore-failed-read
+
+      # Create release
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "${{ inputs.tag }} (${{ env.NOW }})"
+          body: ${{ inputs.changelog }}
+          tag_name: ${{ inputs.tag }}
+          token: ${{ secrets.GIT_TOKEN }}
+          files: |
+            ${{ inputs.project_dir }}/${{ github.event.repository.name }}-${{ inputs.project_name }}-v${{ inputs.version }}.zip
+            ${{ inputs.project_dir }}/${{ github.event.repository.name }}-${{ inputs.project_name }}-v${{ inputs.version }}.tar.gz
