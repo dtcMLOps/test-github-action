@@ -68,7 +68,7 @@ jobs:
           fetch-depth: 0 # fetch the whole repo history
 
       # calculate version tag based on codebase commit types
-      - uses: paulhatch/semantic-version@v5.0.2
+      - uses: paulhatch/semantic-version@v5.0.3
         id: generated_version
         with:
           # The prefix to use to identify tags
