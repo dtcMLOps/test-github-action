@@ -52,7 +52,7 @@ jobs:
       # Build changelog
       - name: Build Changelog
         id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@v3.6.1
+        uses: mikepenz/release-changelog-builder-action@v3.7.0
         with:
           fromTag: ${{ inputs.fromTag }}
           toTag: ${{ inputs.toTag }}
