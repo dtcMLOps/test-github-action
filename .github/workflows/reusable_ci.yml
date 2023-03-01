@@ -313,7 +313,7 @@ jobs:
       # pull coverage report comment
       - name: Running PR BOT comment for coverage
         if: inputs.unit_test_directory != 'none'
-        uses: MishaKav/pytest-coverage-comment@v1.1.37
+        uses: MishaKav/pytest-coverage-comment@v1.1.45
         with:
           pytest-coverage-path: ./pytest-coverage-${{ matrix.python-version }}.txt
           title: Unit Tests Coverage Report for Python-${{ matrix.python-version }} - ${{github.workspace}}
