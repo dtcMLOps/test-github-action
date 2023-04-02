@@ -2,7 +2,8 @@ name: Update Badge
 
 on:
   push:
-  pull_request:
+    branches:
+      - "empty"
 
 jobs:
   create_badge:
