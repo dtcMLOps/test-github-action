@@ -5,18 +5,6 @@ on:
   # event to trigger workflow manually
   workflow_dispatch:
 
-  # event to trigger workflow chronologically
-  schedule:
-          #  ┌───────────── minute (0 - 59)
-          #  │ ┌───────────── hour (0 - 23)
-          #  │ │ ┌───────────── day of the month (1 - 31)
-          #  │ │ │  ┌───────────── month (1 - 12)
-          #  │ │ │  │ ┌───────────── day of the week (0 - 6)
-          #  │ │ │  │ │                                   
-          #  │ │ │  │ │
-          #  │ │ │  │ │
-          #  * * *  * *
-    - cron: "5 6 3 * *"
 
 jobs:
   # call reusable semantic version from ab-inbev-maz/lh-maz-workflows repository
