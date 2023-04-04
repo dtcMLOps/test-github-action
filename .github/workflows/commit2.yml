@@ -14,7 +14,7 @@ jobs:
     with:
       commitRegexPattern: "^AB#[0-9]+ \\b(feat|fix|test|docs|chore|style|refactor|ci|cd|build|perf|revert)\\b"
       SubjectMaxLength: 69
-      checkSubjectTypeMessageError: "You nee2d to follow conventional commit type in the title line. Please see https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#type for examples"
+      checkSubjectTypeMessageError: "You nee3d to follow conventional commit type in the title line. Please see https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#type for examples"
       checkSubjectType: true
       checkSubjectDuplicity: true
       checkSubjectMaxLength: true
