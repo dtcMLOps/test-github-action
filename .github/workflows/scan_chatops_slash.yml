@@ -1,0 +1,41 @@
+# re
+name: "Reusable ChatOps Commands"
+
+on:
+
+  # trigger event to be called from a caller workflow
+  workflow_call:
+    inputs:
+      command:
+        required: false
+        type: string
+        default: "approve"
+        description: "slash command to be executed"
+      permission:
+        required: false
+        type: string
+        default: "admin"
+        description: "slash command to be executed"
+
+    # secrets to be passed from the caller workflow
+    secrets:
+      GIT_TOKEN:
+        required: true
+
+jobs:
+
+  # job to be called from a caller workflow
+  pull-request-slash-commands:
+    runs-on: ubuntu-22.04
+    name: "Slash Command"
+    steps:
+
+      - name: Dispatch PR Slash Commands
+        uses: peter-evans/slash-command-dispatch@v3.0.1
+        with:
+          issue-type: pull-request
+          token: ${{ secrets.GIT_TOKEN }}
+          permission: ${{ inputs.permission }}
+          allow-edits: false
+          commands: |
+            ${{ inputs.command }}

@@ -1,0 +1,29 @@
+
+name: pull-request-slash-commands
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  # pull-request-slash-commands:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Dispatch PR Slash Commands
+  #       uses: peter-evans/slash-command-dispatch@v2
+  #       with:
+  #         issue-type: pull-request
+  #         token: ${{ secrets.GITHUB_TOKEN }}
+  #         permission: admin
+  #         allow-edits: false
+  #         commands: |
+  #           mergeme
+  # assing label to PR
+  call_reusable_chatops_workflow:
+    name: Slash
+    # call reusable workflow
+    uses: ./.github/workflows/scan_chatops_slash.yml
+    with:
+      command: approve
+      permission: admin
+    # pass secrets to reusable workflow
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}

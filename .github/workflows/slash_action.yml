@@ -1,0 +1,231 @@
+name: Enable Merge Button
+on:
+  repository_dispatch:
+    types: [mergeme-command]
+jobs:
+    # # ${{ contains(github.event.*.labels.*.name, 'do not merge') }}
+    # check-mergeable:                    
+    #     name: Check Merging
+    #     runs-on: ubuntu-latest
+
+    #     outputs:
+    #         test_files_exist: ${{ steps.step_check_if_test_files_exist.outputs.test_files_exist }}
+
+    #     steps:
+
+    #         # bash if statement with ${{ contains(github.event.client_payload.pull_request.user.login, 'dtcMLOps') }}
+
+    #         - name: Check if test files exist
+    #           id: step_check_if_test_files_exist
+    #           run: |
+    #             if [[ (${{ contains(github.event.client_payload.pull_request.user.login, 'dtcMLOps') }}  = true) || (${{ contains(github.event.client_payload.pull_request.user.login, 'miguelArquezABI') }}  = true )]]
+    #             then
+    #                 echo "test files exist"
+    #                 echo "test_files_exist=true" >> $GITHUB_OUTPUT
+    #             else
+    #                 echo "no test files exist"
+    #                 echo "test_files_exist=false" >> $GITHUB_OUTPUT
+    #             fi
+
+    approve-merge:
+        name: Approve
+        runs-on: ubuntu-latest
+        # needs: check-mergeable
+        # if: needs.check-mergeable.outputs.test_files_exist == 'true'
+        steps:
+            - name: Approve Merge              
+              uses: peter-evans/create-or-update-comment@v1
+              with:
+                issue-number: ${{ github.event.client_payload.pull_request.number }}
+                body: |
+                    ## You did it! 🎉
+
+                    Merge Button is now enabled. Please merge this PR when you are ready.
+                                       
+                    Workflow: [${{ github.workflow }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+                    Action: `Enable Merge Button`
+
+            - name: Set PR Status
+              if: ${{ always() }}
+              uses: niteoweb/pull_request_status_action@v1.0.0
+              with:
+                    pr_number: ${{ github.event.client_payload.pull_request.number }}
+                    state: ${{ job.status }}
+                    repository: ${{ github.repository }}
+                    context: ${{ github.workflow }}
+                    target_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              env:
+                    GITHUB_TOKEN: ${{ github.token }}
+
+            # - name: Success Merge
+            #   run: |
+            #         echo "Pull request is ready to merge"
+            #         exit 0
+
+    # do-not-merge:
+    #     name: Reject
+    #     runs-on: ubuntu-latest
+    #     needs: check-mergeable
+    #     if: needs.check-mergeable.outputs.test_files_exist == 'false' 
+    #     steps:
+    #         - name: Do not Approve Merging                     
+    #           uses: peter-evans/create-or-update-comment@v1
+    #           with:
+    #             issue-number: ${{ github.event.client_payload.pull_request.number }}
+    #             body: |
+    #                 I'm sorry, I'm afraid I can't do that.
+    #                 I think you know what the problem is just as well as I do.
+    #                 This PR is too important for me to allow you to jeopardize it.
+
+    #                 Only an authorized user can merge this PR.
+
+    #         - name: Set PR Status Pending
+    #           uses: niteoweb/pull_request_status_action@v1.0.0
+    #           with:
+    #                 pr_number: ${{ github.event.client_payload.pull_request.number }}
+    #                 state: "pending"
+    #                 repository: ${{ github.repository }}
+    #                 context: ${{ github.workflow }}
+    #                 target_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    #           env:
+    #                 GITHUB_TOKEN: ${{ github.token }}
+    #         # - name: Fail Merge
+    #         #   run: |
+    #         #         exit 1
+
+    # do-not-merge:
+    #     needs: merge
+    #     if: |
+    #         ${{ !contains(github.event.client_payload.pull_request.user.login, 'dtcMLOps') }} ||
+    #         ${{ !contains(github.event.client_payload.pull_request.user.login, 'miguelArquezABI') }}            
+    #     name: Do not Approve Merging
+    #     runs-on: ubuntu-latest
+    #     steps:
+    #         - name: Check for label
+    #           run: |
+    #             echo "Pull request is labeled as 'do not merge'"
+    #             echo "This workflow fails so that the pull request cannot be merged"
+    #             echo "actor.login: ${{ github.event.client_payload.pull_request.user.login }}"
+    #             exit 1
+    # Set mergeable_state docs at:
+  # https://github.com/octokit/octokit.net/issues/1763
+  # https://docs.github.com/en/free-pro-team@latest/graphql/reference/enums#mergestatestatus
+  # Only merge on green-and-clean.
+  #
+  # The comparisons below are a bit funky, as the 'true'/'false' output is returned
+  # as a string. You *must* compare against the string literal, rather than relying
+  # on boolean operators.
+#   check-mergeable:
+#     runs-on: ubuntu-22.04
+#     outputs:
+#       mergeable: ${{
+#           (
+#             github.event.client_payload.pull_request.mergeable_state == 'clean' ||
+#             github.event.client_payload.pull_request.mergeable_state == 'has_hooks'
+#           )
+#         }}
+#     steps:
+#      - name: Set PR Status Pending
+#        uses: niteoweb/pull_request_status_action@v1.0.0
+#        with:
+#          pr_number: ${{ github.event.client_payload.pull_request.number }}
+#          state: "pending"
+#          repository: ${{ github.repository }}
+#          context: ${{ github.workflow }}
+#          target_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+#        env:
+#          GITHUB_TOKEN: ${{ github.token }}
+
+#   report-no-merge:
+#     needs: check-mergeable
+    # if: ${{ needs.check-mergeable.outputs.mergeable == 'false' }}
+#     runs-on: ubuntu-22.04
+#     steps:
+#      - name: Create Plan Comment
+#        uses: peter-evans/create-or-update-comment@v1
+#        with:
+#          issue-number: ${{ github.event.client_payload.pull_request.number }}
+#          body: |
+#            I'm sorry @${{ github.actor }}, I'm afraid I can't do that.
+#            I think you know what the problem is just as well as I do.
+#            This PR is too important for me to allow you to jeopardize it.
+#      - name: Set PR Status Error
+#        uses: niteoweb/pull_request_status_action@v1.0.0
+#        with:
+#          pr_number: ${{ github.event.client_payload.pull_request.number }}
+#          state: "failure"
+#          repository: ${{ github.repository }}
+#          context: ${{ github.workflow }}
+#          target_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+#        env:
+#          GITHUB_TOKEN: ${{ github.token }}
+
+#   apply-and-merge:
+#     needs: check-mergeable
+#     if: ${{ needs.check-mergeable.outputs.mergeable == 'true' }}
+#     runs-on: ubuntu-22.04
+#     steps:
+#       - name: Checkout Merge Commit
+#         uses: actions/checkout@v2
+#         with:
+#           ref: ${{ github.event.client_payload.pull_request.merge_commit_sha }}
+          
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v1.2.0
+#       - name: Terraform Init
+#         id: init
+#         run: terraform init
+#       - name: Terraform Apply
+#         id: apply
+#         run: terraform apply
+        
+#       - name: Set PR Status
+#         if: ${{ always() }}
+#         uses: niteoweb/pull_request_status_action@v1.0.0
+#         with:
+#           pr_number: ${{ github.event.client_payload.pull_request.number }}
+#           state: ${{ job.status }}
+#           repository: ${{ github.repository }}
+#           context: ${{ github.workflow }}
+#           target_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+#         env:
+#           GITHUB_TOKEN: ${{ github.token }}
+
+#       - name: Create Apply Comment
+#         if: ${{ always() }}
+#         uses: peter-evans/create-or-update-comment@v1
+#         with:
+#           issue-number: ${{ github.event.client_payload.pull_request.number }}
+#           body: |
+#             ## Terraform
+#             #### ⚙️ Init  `${{ steps.init.outcome }}`
+#             #### 🏗️ Apply `${{ steps.apply.outcome }}`
+#             <details><summary>stdout</summary>
+#             ```terraform
+#             ${{ steps.apply.outputs.stdout }}
+#             ```
+#             </details>
+#             <details><summary>stderr</summary>
+#             ```terraform
+#             ${{ steps.apply.outputs.stderr }}
+#             ```
+#             </details>
+            
+#             Workflow: [${{ github.workflow }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+#             Action: `${{ github.event_name }}`
+#             Pusher: @${{ github.actor }}
+        
+
+    #   - name: "Merge pull request"
+    #     uses: "actions/github-script@v2"
+    #     with:
+    #       script: |
+    #         const pull_request = context.payload.client_payload.pull_request
+    #         const repository = context.repo
+    #         await github.pulls.merge({
+    #           owner: repository.owner,
+    #           repo: repository.repo,
+    #           pull_number: pull_request.number,
+    #           merge_method: "squash",
+    #           commit_title: `${pull_request.title} (${pull_request.number})\n`,
+    #         })
