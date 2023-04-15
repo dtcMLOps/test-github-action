@@ -1,0 +1,1 @@
+SELECT * FROM $table_name WHERE $column_name BETWEEN '$initial_date_for_aggregation' AND '$end_date_for_aggregation'

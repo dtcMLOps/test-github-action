@@ -1,0 +1,512 @@
+# Reusable workflow for testing Lint Format in Python
+name: "Reusable Unit - Integration Tests"
+
+on:
+  # trigger event to be called from a caller workflow
+  workflow_call:
+    inputs:
+      # test folder directory
+      test_folder_directory:
+        required: false
+        type: string
+        default: "none"
+        description: "path to tests folder"
+      # python version to be tested
+      python_test_versions:
+        default: "['3.8']"
+        required: false
+        type: string
+      # requirements.txt file directory
+      requirements_directory:
+        required: false
+        type: string
+        default: "requirements.txt"
+        description: "path to module requirements"
+      # requirements-dev.txt file directory
+      requirements_dev_directory:
+        required: false
+        type: string
+        default: "requirements-dev.txt"
+        description: "path to module requirements for dev"
+      # unit test directory
+      unit_test_directory:
+        required: false
+        type: string
+        default: "none"
+        description: "path to unit testing folder"
+      # integration test directory
+      integration_test_directory:
+        required: false
+        type: string
+        default: "none"
+        description: "path to integration testing folder"
+      # unit integration test repot as markdown
+      unit_int_report:
+        required: false
+        type: boolean
+        default: true
+        description: "Enable/disable markdown report"
+      # path to project source directory, e.g. src/
+      project_src_directory:
+        required: false
+        type: string
+        default: "."
+        description: "path to project source directory"
+
+    secrets:
+    # token to enable access to the commit history
+      GIT_TOKEN:
+        required: false
+      ENV_VARS:
+        description: List of environment variables to set up, given in env=value format.
+        required: false
+
+env:
+  ENVVARS: ${{ secrets.ENV_VARS }}
+
+jobs:
+  # style formatter validator
+  unit_test_validator:
+    name: "Unit Tests Validator"
+
+    if: inputs.unit_test_directory != 'none'
+
+    runs-on: ubuntu-22.04
+    strategy:
+      #If true, GitHub cancels all in-progress jobs if any matrix job fails.
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(inputs.python_test_versions) }}
+
+    steps:
+      # clones current repository
+      - name: Checkout current repository
+        uses: actions/checkout@v3.5.0
+        with:
+          fetch-depth: 0
+
+      # set environment variables if provided
+      - name: Set environment variables
+        if: "${{ env.ENVVARS != '' }}"
+        run: |
+          for i in "${{ secrets.ENV_VARS }}"
+          do
+            printf "%s\n" $i >> $GITHUB_ENV
+          done
+
+      # install python
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        id: setup_python
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # configure virtualenv
+      - name: Configure Virtualenv
+        uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
+        with:
+          requirement_files: ${{ inputs.requirements_directory }}
+          custom_cache_key_element: cache-v1-${{ matrix.python-version }}
+
+      # restore cache dependencies
+      - name: Restore Cache Dependencies
+        if: ${{ steps.cache-virtualenv.outputs.cache-hit != 'true' }}
+        uses: syphar/restore-pip-download-cache@v1
+
+      # install dev and project dependencies
+      - name: Install dependencies
+        if: ${{ steps.cache-virtualenv.outputs.cache-hit != 'true' }}
+        run: |
+          pip install -r ${{ inputs.requirements_dev_directory }}
+          pip install pytest-md pytest-emoji pytest-html greenlet
+          pip install -r ${{ inputs.requirements_directory }}
+
+      # run unit tests
+      - name: Running Unit Tests
+        if: inputs.unit_test_directory != 'none'
+        run: |
+          python3 -m pytest ${{ inputs.unit_test_directory }} -vv -s \
+          -W ignore \
+          --doctest-modules \
+          --junitxml=coverage/xunit-result-${{ matrix.python-version }}.xml
+
+      # run unit tests
+      - name: Generate Unit Tests HTML Report
+        if: inputs.unit_test_directory != 'none'
+        run: |
+          python3 -m pytest --html "results.html" ${{ inputs.unit_test_directory }} -vv -s
+
+      # upload unit test results to GitHub
+      - name: Upload Unit Test Report
+        if: inputs.unit_test_directory != 'none'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Unit Test Results (Python ${{ matrix.python-version }})
+          path: coverage/xunit-result-${{ matrix.python-version }}.xml
+          retention-days: 3
+
+      # upload unit test HTML report to GitHub
+      - name: Upload Unit Test HTML Report
+        if: inputs.unit_test_directory != 'none'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Unit Test Report HTML (Python ${{ matrix.python-version }})
+          path: |
+            results.html
+            assets/
+          retention-days: 3
+
+      # publish unit tests results as PR comment
+      - name: Generate Unit Test Report as MD
+        if: ${{ inputs.unit_int_report }}
+        uses: pavelzw/pytest-action@v2
+        with:
+          verbose: true
+          emoji: true
+          job-summary: true
+          custom-arguments: ${{ inputs.unit_test_directory }}
+          click-to-expand: true
+          report-title: "Unit Tests Report"
+
+      - name: Publish Unit Test Report PR Comment
+        if: ${{ inputs.unit_int_report }}
+        uses: marocchino/sticky-pull-request-comment@v2.3.1
+        with:
+          header: unit-test
+          path: "report.md"
+
+  # publish unit tests
+  publish_unit_test_results:
+    name: Publish Unit Tests Report
+    needs: [unit_test_validator]
+    runs-on: ubuntu-22.04
+
+    steps:
+      # download pytest reports from artifact registry
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      # publishes unit test results
+      - name: Publish Unit Test Report
+        uses: EnricoMi/publish-unit-test-result-action@v2.6.1
+        with:
+          junit_files: artifacts/**/xunit-result*.xml
+          check_name: "Unit Test Results"
+
+  # style formatter validator
+  integration_test_validator:
+    name: "Integration Tests Validator"
+    if: inputs.integration_test_directory != 'none'
+    runs-on: ubuntu-22.04
+    strategy:
+      #If true, GitHub cancels all in-progress jobs if any matrix job fails.
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(inputs.python_test_versions) }}
+
+    steps:
+      # clones current repository
+      - name: Checkout current repository
+        uses: actions/checkout@v3.5.0
+        with:
+          fetch-depth: 0
+
+      # set environment variables if provided
+      - name: Set environment variables
+        if: "${{ env.ENVVARS != '' }}"
+        run: |
+          for i in "${{ secrets.ENV_VARS }}"
+          do
+            printf "%s\n" $i >> $GITHUB_ENV
+          done
+
+      # install python
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        id: setup_python
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # configure virtualenv
+      - name: Configure Virtualenv
+        uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
+        with:
+          requirement_files: ${{ inputs.requirements_directory }}
+          custom_cache_key_element: cache-v2-${{ matrix.python-version }}
+
+      # restore cache dependencies
+      - name: Restore Cache Dependencies
+        if: ${{ steps.cache-virtualenv.outputs.cache-hit != 'true' }}
+        uses: syphar/restore-pip-download-cache@v1
+
+      # install project depedencies
+      - name: Install dependencies
+        if: ${{ steps.cache-virtualenv.outputs.cache-hit != 'true' }}
+        run: |
+          pip install -r ${{ inputs.requirements_dev_directory }}
+          pip install pytest-md pytest-emoji pytest-html greenlet
+          pip install -r ${{ inputs.requirements_directory }}
+
+      # run integration tests
+      - name: Running Integration Tests
+        if: inputs.integration_test_directory != 'none'
+        run: |
+          python3 -m pytest ${{ inputs.integration_test_directory }} -vv -s \
+          -W ignore \
+          --doctest-modules \
+          --junitxml=junit/inttest-${{ matrix.python-version }}.xml
+
+      # run integration test html report
+      - name: Generate Integration Tests HTML Report
+        if: inputs.integration_test_directory != 'none'
+        run: |
+          python3 -m pytest --html "results.html" ${{ inputs.integration_test_directory }} -vv -s
+
+      # upload integration test results to GitHub
+      - name: Upload Integration Test Report
+        if: inputs.integration_test_directory != 'none'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Integration Test Results (Python ${{ matrix.python-version }})
+          path: junit/inttest-${{ matrix.python-version }}.xml
+          retention-days: 3
+
+      # upload integration tests HTML report to GitHub
+      - name: Upload Integration Test HTML Report
+        if: inputs.integration_test_directory != 'none'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Integration Test Report HTML (Python ${{ matrix.python-version }})
+          path: |
+            results.html
+            assets/
+          retention-days: 3
+
+      # publish integration tests results as PR comment
+      - name: Generate Integration Test Report as MD
+        if: ${{ inputs.unit_int_report }}
+        uses: pavelzw/pytest-action@v2
+        with:
+          verbose: true
+          emoji: true
+          custom-arguments: ${{ inputs.integration_test_directory }}
+          job-summary: true
+          click-to-expand: true
+          report-title: "Integration Tests Report"
+
+      - name: Publish Integration Test Report PR Comment
+        if: ${{ inputs.unit_int_report }}
+        uses: marocchino/sticky-pull-request-comment@v2.3.1        
+        with:
+          header: integration-test
+          path: "report.md"
+
+  # publish integration tests
+  publish_integration_test_results:
+    name: Publish Integration Tests Report
+    needs: [integration_test_validator]
+    runs-on: ubuntu-22.04
+
+    steps:
+      # download pytest reports from artifact registry
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      # publishes integration test results
+      - name: Publish Integration Test Report
+        uses: EnricoMi/publish-unit-test-result-action@v2.6.1
+        with:
+          junit_files: artifacts/**/inttest*.xml
+          check_name: "Integration Test Results"
+
+  # style formatter validator
+  coverage_report_validator:
+    name: "Coverage Report Validator"
+    runs-on: ubuntu-22.04
+    needs: [publish_unit_test_results, publish_integration_test_results]
+    if: |
+      always()
+
+    steps:
+      # clones current repository
+      - name: Checkout current repository
+        uses: actions/checkout@v3.5.0
+        with:
+          fetch-depth: 0
+
+      # set environment variables if provided
+      - name: Extract First Element From Python Versions
+        run: |
+
+          versions=(${{ fromJson(inputs.python_test_versions)[0] }})  
+          echo "element in array is: $versions"
+          readarray -t ADDR2 <<< "$versions"
+          echo "element in array is: ${ADDR2[0]}"
+          
+
+  #     # set environment variables if provided
+  #     - name: Set environment variables
+  #       if: "${{ env.ENVVARS != '' }}"
+  #       run: |
+  #         for i in "${{ secrets.ENV_VARS }}"
+  #         do
+  #           printf "%s\n" $i >> $GITHUB_ENV
+  #         done
+
+  #     # install python
+  #     - name: Setup Python ${{ matrix.python-version }}
+  #       uses: actions/setup-python@v4
+  #       id: setup_python
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+
+  #     # configure virtualenv
+  #     - name: Configure Virtualenv
+  #       uses: syphar/restore-virtualenv@v1
+  #       id: cache-virtualenv
+  #       with:
+  #         requirement_files: ${{ inputs.requirements_directory }}
+  #         custom_cache_key_element: cache-v1-${{ matrix.python-version }}
+
+  #     # restore cache dependencies
+  #     - name: Restore Cache Dependencies
+  #       if: ${{ steps.cache-virtualenv.outputs.cache-hit != 'true' }}
+  #       uses: syphar/restore-pip-download-cache@v1
+
+  #     # install project depedencies
+  #     - name: Install dependencies
+  #       if: ${{ steps.cache-virtualenv.outputs.cache-hit != 'true' }}
+  #       run: |
+  #         pip install greenlet==2.0.2
+  #         pip install -r ${{ inputs.requirements_dev_directory }}
+  #         pip install -r ${{ inputs.requirements_directory }}
+
+  #     # generate coverage report for artifacts
+  #     # generate xml coverage report
+  #     # generate html coverage report
+  #     # missing lines printed in the terminal with term-missing
+  #     # config file for coverage with .coveragerc
+  #     # ignore pytest warnings with -W ignore
+  #     # verbose mode with -vv
+  #     # show stdout with -s
+  #     - name: Running Coverage report
+  #       if: inputs.test_folder_directory != 'none'
+  #       run: |
+  #         python3 -m pytest ${{ inputs.test_folder_directory }} -vv -s \
+  #         -W ignore \
+  #         --doctest-modules \
+  #         --cov=${{ inputs.project_src_directory }} \
+  #         --cov-report=xml:coverage-${{ matrix.python-version }}.xml \
+  #         --cov-report=html:coverage_report-${{ matrix.python-version }} \
+  #         --cov-report=term-missing \
+  #         --cov-config=.coveragerc
+
+  #     # Upload coverage report for sonar.
+  #     - name: Upload Coverage Report Before SonarCloud
+  #       if: inputs.unit_test_directory != 'none'
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: Coverage Report Before SonarCloud (Python ${{ matrix.python-version }})
+  #         path: coverage-${{ matrix.python-version }}.xml
+  #         retention-days: 3
+
+  #     # generate coverage report for sonar
+  #     - name: Generating SonarCloud Coverage Report
+  #       if: inputs.unit_test_directory != 'none'
+  #       run: |
+  #         coverage xml -i -o coverage-${{ matrix.python-version }}.xml
+
+  #     # creates coverage report for banner in pull request.
+  #     - name: Generating coverage file for PR BOT comment
+  #       if: inputs.test_folder_directory != 'none'
+  #       run: |
+  #         python3 -m pytest ${{ inputs.test_folder_directory }} -vv -s \
+  #         -W ignore \
+  #         --junitxml=pytest-${{ matrix.python-version }}.xml \
+  #         --cov-report=term-missing \
+  #         --cov-config=.coveragerc \
+  #         --cov=${{ inputs.project_src_directory }} | tee pytest-coverage-${{ matrix.python-version }}.txt
+
+  #     # Upload coverage report for sonar.
+  #     - name: Upload Coverage Report SonarCloud
+  #       if: inputs.unit_test_directory != 'none'
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: Coverage Report SonarCloud (Python ${{ matrix.python-version }})
+  #         path: coverage-${{ matrix.python-version }}.xml
+  #         retention-days: 3
+
+  #     # upload coverage results as HTML to GitHub
+  #     - name: Upload Coverage Report HTML
+  #       if: inputs.unit_test_directory != 'none'
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: Coverage Report HTML (Python ${{ matrix.python-version }})
+  #         path: coverage_report-${{ matrix.python-version }}
+  #         retention-days: 3
+
+  #     # Upload coverage report for sonar.
+  #     - name: Upload Pytest Coverage Report PR BOT
+  #       if: inputs.unit_test_directory != 'none'
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: Pytest Coverage Report PR BOT (Python ${{ matrix.python-version }})
+  #         path: pytest-coverage-${{ matrix.python-version }}.txt
+  #         retention-days: 3
+          
+  # # publish integration tests
+  # publish_coverage_report:
+  #   name: Publish Coverage Report
+  #   needs: [coverage_report_validator]
+
+  #   if: |
+  #     always() &&
+  #     !contains(needs.*.result, 'failure') &&
+  #     !contains(needs.*.result, 'cancelled')
+      
+  #   runs-on: ubuntu-22.04
+
+  #   strategy:
+  #     #If true, GitHub cancels all in-progress jobs if any matrix job fails.
+  #     fail-fast: false
+  #     matrix:
+  #       python-version: ${{ fromJson(inputs.python_test_versions) }}
+
+  #   steps:
+  #     # download pytest reports from artifact registry
+  #     - name: Download Coverage Report PR BOT
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         path: artifacts
+  #         name: Pytest Coverage Report PR BOT (Python ${{ matrix.python-version }})
+
+  #     # download pytest reports from artifact registry
+  #     - name: Download Unit Tests Report
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         path: artifacts
+  #         name: Unit Test Results (Python ${{ matrix.python-version }})
+
+  #     # pull coverage report comment
+  #     - name: Running PR BOT comment for coverage
+  #       if: inputs.unit_test_directory != 'none'
+  #       uses: MishaKav/pytest-coverage-comment@v1.1.45
+  #       with:
+  #         pytest-coverage-path: artifacts/pytest-coverage-${{ matrix.python-version }}.txt
+  #         title: Coverage Full Report
+  #         badge-title: Coverage
+  #         hide-badge: false
+  #         report-only-changed-files: false
+  #         hide-report: false
+  #         create-new-comment: false
+  #         hide-comment: false
+  #         remove-link-from-badge: false
+  #         junitxml-path: artifacts/xunit-result-${{ matrix.python-version }}.xml
+  #         junitxml-title: "Coverage Report Summary for Python-${{ matrix.python-version }}"
+  #         github-token: ${{ secrets.GIT_TOKEN }}

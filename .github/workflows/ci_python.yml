@@ -1,0 +1,42 @@
+# workflow to run a continuous integration pipeline in the POP module
+name: CI Pipeline PYTHON
+
+on:
+  # event to trigger workflow when opening a pull request
+  pull_request:
+    # target branch
+    branches:
+      - main
+    # event type related to pull request
+    types: [opened, reopened, synchronize]
+    # only run this workflow when a python file is updated in the following path
+
+
+jobs:
+  # call reusable ci workflow from ab-inbev-maz/lh-maz-workflows repository
+  call_reusable_ci_validator:
+    name: CI
+    # call reusable workflow
+    uses: ./.github/workflows/reusable_ci_python.yml
+    with:
+      pyProjectDirectory: pyproject.toml
+      project_src_directory: src
+      requirements_directory: src/requirements.txt
+      requirements_dev_directory: requirements-dev.txt
+      test_folder_directory: src/tests
+      unit_test_directory: src/tests/unit
+      sonar_project_dir: src
+      python_test_versions: "['3.7','3.8','3.9.16']"
+      checkMypy: false
+      checkPylint: false
+      checkDocformatter: false
+      checkDarglint: false
+      checkBlack: false
+      checkIsort: false
+      checkInterrogate: false
+      checkSortRequirements: false
+
+    # pass secrets to reusable workflow
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_SERVICES }}

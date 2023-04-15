@@ -1,0 +1,86 @@
+# Reusable workflow for running sonarcloud scan
+name: "Reusable SonarCloud Scan"
+
+on:
+  # trigger event to be called from a caller workflow
+  workflow_call:
+    inputs:
+      # define python version
+      python_test_versions:
+        default: "['3.8']"
+        required: false
+        type: string
+      # input parameter to check if unit test folder exists
+      unit_test_directory:
+        required: true
+        type: string
+        default: "none"
+        description: "path to unit testing folder"
+      # input parameter to provide sonarproject directory
+      sonar_project_dir:
+        required: true
+        type: string
+        description: "path to sonar-project.properties file in module"
+
+    secrets:
+      # token to enable access to the commit history
+      GIT_TOKEN:
+        required: true
+      # token to enable sonarcloud execution
+      SONAR_TOKEN:
+        required: true
+
+jobs:
+
+  # run sonarcloud with tests and coverage
+  sonarcloudScanWithTests:
+    name: SonarCloud Scan
+    runs-on: ubuntu-22.04
+
+    strategy:
+      #If true, GitHub cancels all in-progress jobs if any matrix job fails.
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(inputs.python_test_versions) }}
+
+    steps:
+      # clones current repository
+      - uses: actions/checkout@v3.3.0
+        with:
+          fetch-depth: 0
+
+      # Download coverage report for sonar.
+      - name: Download Coverage Report SonarCloud
+        if: inputs.unit_test_directory != 'none'
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: Coverage Report SonarCloud (Python ${{ matrix.python-version }})
+
+      # Download unit tests coverage report for banner in pull request.
+      - name: Download Unit Test Report
+        if: inputs.unit_test_directory != 'none'
+        uses: actions/download-artifact@v3
+        continue-on-error: true
+        with:
+          name: Unit Test Results (Python ${{ matrix.python-version }})
+
+      - name: Override Coverage Source Path for SonarCloud
+        if: inputs.unit_test_directory != 'none'
+        # run: sed -i "s+$PWD/src/++g" ./coverage-${{ matrix.python-version }}.xml
+        run: |
+          sed -i "s|$PWD|/github/workspace|g" coverage-${{ matrix.python-version }}.xml
+          
+      # run SonarCloud scan
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v1.8
+        env:
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ inputs.sonar_project_dir }}
+          args: >
+            -Dsonar.python.version=${{ matrix.python-version }}
+            -Dsonar.python.coverage.reportPaths=coverage-${{ matrix.python-version }}.xml
+            -Dsonar.python.xunit.reportPath=xunit-result-${{ matrix.python-version }}.xml
+            -Dsonar.python.xunit.skipDetails=true

@@ -1,0 +1,189 @@
+# Reusable workflow for testing Lint Format in Python
+name: "Reusable Lint Python"
+
+on:
+  # trigger event to be called from a caller workflow
+  workflow_call:
+    inputs:
+      # input parameter to define project directory
+      pyProjectDirectory:
+        default: "pyproject.toml"
+        required: false
+        type: string
+      # input parameter to enable check: black
+      checkBlack:
+        required: false
+        type: boolean
+        default: true
+        description: "check black format"
+      # input parameter to enable check: flake8
+      checkFlake8:
+        required: false
+        type: boolean
+        default: true
+        description: "check flake8"
+      # input parameter to enable check: isort
+      checkIsort:
+        required: false
+        type: boolean
+        default: true
+        description: "check isort"
+      # input parameter to enable check: interrogate
+      checkInterrogate:
+        required: false
+        type: boolean
+        default: true
+        description: "check interrogate"
+      # input parameter to enable check: darglint
+      checkDarglint:
+        required: false
+        type: boolean
+        default: true
+        description: "check darglint"
+      # input parameter to enable check: mypy
+      checkMypy:
+        required: false
+        type: boolean
+        default: true
+        description: "check mypy"
+      # input parameter to enable check: docformatter
+      checkDocformatter:
+        required: false
+        type: boolean
+        default: true
+        description: "check docformatter"
+      # input parameter to enable check: pylint
+      checkPylint:
+        required: false
+        type: boolean
+        default: true
+        description: "check pylint"
+      # input parameter to enable check: sort-requirements
+      checkSortRequirements:
+        required: false
+        type: boolean
+        default: true
+        description: "check sort-requirements"
+      # requirements-dev.txt file directory
+      requirements_directory:
+        required: true
+        type: string
+        default: "requirements.txt"
+        description: "path to module requirements"
+      # requirements-dev.txt file directory
+      requirements_dev_directory:
+        required: true
+        type: string
+        default: "requirements-dev.txt"
+        description: "path to module requirements for dev"
+
+    secrets:
+    # token to enable access to the commit history
+      GIT_TOKEN:
+        required: false
+
+jobs:
+  # style formatter validator
+  lint_validator:
+    runs-on: ubuntu-22.04
+    name: Lint Validator
+
+    steps:
+      # clones current repository
+      - name: Checkout current repository
+        uses: actions/checkout@v3.3.0
+        with:
+          fetch-depth: 0
+
+      # install python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+
+      # configure virtualenv
+      - name: Configure Virtualenv
+        uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
+        with:
+          requirement_files: ${{ inputs.requirements_dev_directory }}
+          custom_cache_key_element: cache-dev
+
+      # restore cache dependencies
+      - name: Restore Cache Dependencies
+        if: ${{ steps.cache-virtualenv.outputs.cache-hit != 'true' }}
+        uses: syphar/restore-pip-download-cache@v1
+
+      # install lint tools
+      - name: Install Lint Tools
+        if: ${{ steps.cache-virtualenv.outputs.cache-hit != 'true' }}
+        run: |
+          pip install -r ${{ inputs.requirements_dev_directory }}
+
+      # get modified files from pull request
+      - name: Changed Files in PR
+        id: changed_files
+        run: |
+          changed_files=$(git diff --diff-filter=d --name-only $(git merge-base HEAD origin/main) HEAD | grep ".*\.py$")
+          if [ ! -z "$changed_files" ];
+          then
+            changed_files=$(echo $changed_files | tr '\n' ' ')
+            echo "files=$changed_files" >> "$GITHUB_OUTPUT"
+          fi
+          echo "number of files: $(echo $changed_files | wc -w)"
+        shell: bash
+
+      # run black formatter
+      - name: Run Black
+        if: ${{ inputs.checkBlack }}
+        run: |
+          python -m black --check --config ${{ inputs.pyProjectDirectory }} ${{ steps.changed_files.outputs.files }}
+
+      # run flake linter
+      - name: Run Flake8
+        if: ${{ ( inputs.checkFlake8 ) && ( always() ) }}
+        run: |
+          flake8 --extend-ignore DAR --toml-config ${{ inputs.pyProjectDirectory }} ${{ steps.changed_files.outputs.files }}
+
+      # run isort validator
+      - name: Run Isort
+        if: ${{ ( inputs.checkIsort ) && ( always() ) }}
+        run: |
+          isort --check-only --sp ${{ inputs.pyProjectDirectory }} ${{ steps.changed_files.outputs.files }}
+
+      # run docstrings min percentage validator
+      - name: Run Interrogate
+        if: ${{ ( inputs.checkInterrogate ) && ( always() ) }}
+        run: |
+          interrogate --config ${{ inputs.pyProjectDirectory }} ${{ steps.changed_files.outputs.files }}
+
+      # run darglint validator
+      - name: Run Darglint
+        if: ${{ ( inputs.checkDarglint ) && ( always() ) }}
+        run: |
+          darglint --verbosity 2 ${{ steps.changed_files.outputs.files }}
+
+      # run mypy validator
+      - name: Run Mypy
+        if: ${{ ( inputs.checkMypy ) && ( always() ) }}
+        run: |
+          mypy --pretty --config-file ${{ inputs.pyProjectDirectory }} ${{ steps.changed_files.outputs.files }}
+
+      # run docformatter validator
+      - name: Run Docformatter
+        if: ${{ ( inputs.checkDocformatter ) && ( always() ) }}
+        run: |
+          docformatter --config ${{ inputs.pyProjectDirectory }} --exclude venv conda-env --recursive --check ${{ steps.changed_files.outputs.files }}
+          
+      # run pylint validator
+      - name: Run Pylint
+        if: ${{ ( inputs.checkPylint ) && ( always() ) }}
+        run: |
+          pylint --rcfile ${{ inputs.pyProjectDirectory }} ${{ steps.changed_files.outputs.files }}
+
+      # run sort-requirements validator
+      - name: Run Sort Requirements
+        if: ${{ ( inputs.checkSortRequirements ) && ( always() ) }}
+        run: |
+          sort-requirements --check ${{ inputs.requirements_directory }}
+          sort-requirements --check ${{ inputs.requirements_dev_directory }}
