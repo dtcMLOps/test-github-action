@@ -26,4 +26,4 @@ jobs:
       - name: Set Release Date
         run: |
           echo "NOW=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-          echo ${{ env.NOW }}
+          echo "Hola: $NOW"
