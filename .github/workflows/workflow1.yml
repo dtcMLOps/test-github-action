@@ -34,6 +34,6 @@ jobs:
       # Set release date as year-month-day: YYYY-MM-DD.
       - name: Set Release Date
         run: |
-          echo "Hola: ${{ github.event.repository.updated_at}} | sed 's/:/./g'"
+          echo ${{ github.event.repository.updated_at}} | sed 's/:/./g'
           
           
