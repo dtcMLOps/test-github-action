@@ -27,3 +27,7 @@ jobs:
         run: |
           echo "NOW=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
           echo "Hola: $NOW"
+      # Set release date as year-month-day: YYYY-MM-DD.
+      - name: Set Release Date
+        run: |
+          echo "Hola: $NOW"
