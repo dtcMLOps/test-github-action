@@ -31,3 +31,9 @@ jobs:
       - name: Set Release Date
         run: |
           echo "Hola: $NOW"
+      # Set release date as year-month-day: YYYY-MM-DD.
+      - name: Set Release Date
+        run: |
+          echo "Hola: ${{ github.event.repository.updated_at}}"
+          
+          
