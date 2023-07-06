@@ -9,6 +9,24 @@ on:
       - "src/**"
 
 jobs:
+  # release generator job
+  release:
+    runs-on: ubuntu-22.04
+    name: Create Release
+    
+    steps:
+      # clones current repository
+      - name: Clone Repository
+        uses: actions/checkout@v3.3.0
+        with:
+          fetch-depth: 0 # fetch the whole repo history         
+
+      # Set release date as year-month-day: YYYY-MM-DD.
+      - name: Set Release Date
+        run: |
+          echo "NOW=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+          echo ${{ env.NOW }}
+          
   # commit message validator
   commit_validator:
     name: CI / Commit Validator
