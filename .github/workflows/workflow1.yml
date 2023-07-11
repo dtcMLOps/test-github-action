@@ -3,14 +3,14 @@ name: Preflight
 on:
   workflow_dispatch:
     inputs:
-      logLevel:
-        description: 'Log level'
+      tfvars:
+        description: 'configuration file'
         required: true
-        default: 'DEV'
+        default: 'dev.tfvars'
         type: choice
         options:
-          - DEV
-          - PROD
+          - dev.tfvars
+          - prod.tfvars
       environment:
         description: 'Environment to run tests against'
         type: environment
