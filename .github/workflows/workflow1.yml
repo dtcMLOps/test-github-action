@@ -22,6 +22,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "hello world"
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: mshick/add-pr-comment@v2.8.1
+        with:
+          message: |
+            **Hello MAIN**
   # release generator job
   release:
     runs-on: ubuntu-22.04
@@ -47,5 +56,7 @@ jobs:
       - name: Set Release Date
         run: |
           echo ${{ github.event.repository.updated_at}} | sed 's|T.*||g'
+          
+        
           
           
