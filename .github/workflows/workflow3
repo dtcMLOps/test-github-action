@@ -1,0 +1,33 @@
+name: "File existence check"
+
+on: [push]
+
+jobs:
+  file_existence:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check file existence
+        id: check_files
+        uses: andstor/file-existence-action@v2
+        with:
+          files: |
+            "src/prueba1/*.ipynb",
+            "src/prueba2/*.ipynb",
+            "src/prueba3/*.ipynb"            
+
+      # exit with failure
+      - name: Notebook File Exists
+        if: steps.check_files.outputs.files_exists == 'true'
+        run: |
+          echo Notebook files exists!
+          exit 1
+
+      # exit with success
+      - name: Notebook File Not Found
+        if: steps.check_files.outputs.files_exists == 'false'
+        run: |
+          echo Notebook files not found!
+          exit 0
