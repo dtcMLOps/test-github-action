@@ -11,7 +11,7 @@ jobs:
 
       - name: Check file existence
         id: check_files
-        uses: Seagen/file-existence-action@v1.1.0
+        uses: submittable/file-existence-action@v1.1.0
         with:
           files: |
             src/prueba1/*.ipynb,
