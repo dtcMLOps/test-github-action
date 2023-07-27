@@ -14,9 +14,9 @@ jobs:
         uses: andstor/file-existence-action@v2
         with:
           files: |
-            "src/prueba1/*.ipynb",
-            "src/prueba2/*.ipynb",
-            "src/prueba3/*.ipynb"            
+            src/prueba1/*.ipynb,
+            src/prueba2/*.ipynb,
+            src/prueba3/*.ipynb          
 
       # exit with failure
       - name: Notebook File Exists
