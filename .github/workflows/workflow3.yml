@@ -11,7 +11,7 @@ jobs:
 
       - name: Check file existence
         id: check_files
-        uses: department-for-transport/file-existence-action@v5
+        uses: Marimoiro/file-existence-action@v1
         with:
           files: |
             src/prueba1/*.ipynb,
