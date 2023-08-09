@@ -1,0 +1,39 @@
+name: "Github actor"
+
+on: [push]
+
+jobs:
+  github_actor:
+    name: "Github actor"
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: echo
+        run: |
+          echo "github actor: ${{ github.actor }}"
+
+      - name: echo
+        run: |
+          echo "github actor id: ${{ github.actor_id }}"
+
+      - name: echo
+        run: |
+          echo "github repository_owner: ${{ github.repository_owner }}"
+
+      - name: echo
+        run: |
+          echo "github triggering_actor: ${{ github.triggering_actor }}"
+
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            const creator = context.payload.sender.login
+            const result = await github.rest.teams.getMembershipForUserInOrg({
+              org: context.repo.owner,
+              team_slug: 'my-cool-team',
+              username: creator
+            })
+            console.log(creator, result) // do whatever you want
+
