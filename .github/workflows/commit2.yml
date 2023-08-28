@@ -5,52 +5,73 @@ on:
       - main
 
 jobs:
-  check-commit-message:
-    name: Check Commit Message
-    runs-on: ubuntu-latest
-    steps:
+
+  # call reusable commit message validator from ab-inbev-maz/lh-maz-workflows repository
+  call_reusable_commit_validator:
+    name: "CI"
+    # call reusable workflow
+    uses: ./.github/workflows/reusable_commit_validator.yml
+    with:
+      commitRegexPattern: "^AB#[0-9]+ \\b(feat|fix|test|docs|chore|style|refactor|ci|cd|build|perf|revert)\\b"
+      SubjectMaxLength: 69
+      checkSubjectTypeMessageError: "You nee5d to follow conventional commit type in the title line. Please see https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#type for examples"
+      checkSubjectType: true
+      checkSubjectDuplicity: true
+      checkSubjectMaxLength: true
+      checkSubjectMinLength: true
+      checkSubjectNoCapitalize: true
+      checkSubjectNoDot: true
+      checkSubjectBodySpace: true
+      checkSubjectSpaceColon: true
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # check-commit-message:
+  #   name: Check Commit Message
+  #   runs-on: ubuntu-latest
+  #   steps:
       # clones current repository
-      - name: Checkout current repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+      # - name: Checkout current repository
+      #   uses: actions/checkout@v3
+      #   with:
+      #     fetch-depth: 0
 
-      - name: Check Subject Message Type
-        uses: gsactions/commit-message-checker@v1
-        with:
-          pattern: "^AB#[0-9]+ (feat|fix|test|docs|chore|style|refactor|ci|cd).*"
-          error: 'You need to follow conventional commit type "feat|fix|test|docs|chore|style|refactor|ci|cd" in the title line. Please see https://github.com/angular/angular/blob/68a6a07/CONTRIBUTING.md#-commit-message-format for examples'
-          excludeTitle: "true"
-          checkAllCommitMessages: "true"
-          accessToken: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Check Subject Message Type
+      #   uses: gsactions/commit-message-checker@v1
+      #   with:
+      #     pattern: "^AB#[0-9]+ (feat|fix|test|docs|chore|style|refactor|ci|cd).*"
+      #     error: 'You need to follow conventional commit type "feat|fix|test|docs|chore|style|refactor|ci|cd" in the title line. Please see https://github.com/angular/angular/blob/68a6a07/CONTRIBUTING.md#-commit-message-format for examples'
+      #     excludeTitle: "true"
+      #     checkAllCommitMessages: "true"
+      #     accessToken: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check Subject Line Length
-        if: ${{ success() || failure() }}
-        uses: gsactions/commit-message-checker@v2
-        with:
-          pattern: "^.{0,51}(\n.*)*$"
-          error: "The maximum line length of 50 characters is exceeded."
-          excludeDescription: "true" # optional: this excludes the description body of a pull request
-          excludeTitle: "true" # optional: this excludes the title of a pull request
-          checkAllCommitMessages: "true" # optional: this checks all commits associated with a pull request
-          accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+      # - name: Check Subject Line Length
+      #   if: ${{ success() || failure() }}
+      #   uses: gsactions/commit-message-checker@v2
+      #   with:
+      #     pattern: "^.{0,51}(\n.*)*$"
+      #     error: "The maximum line length of 50 characters is exceeded."
+      #     excludeDescription: "true" # optional: this excludes the description body of a pull request
+      #     excludeTitle: "true" # optional: this excludes the title of a pull request
+      #     checkAllCommitMessages: "true" # optional: this checks all commits associated with a pull request
+      #     accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
 
-      - name: Check Subject No Capitalize
-        if: ${{ success() || failure() }}
-        uses: gsactions/commit-message-checker@v1
-        with:
-          pattern: ".*: [a-z].*"
-          error: "Don't capitalize the first letter in the commit subject"
-          excludeTitle: "true"
-          checkAllCommitMessages: "true"
-          accessToken: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Check Subject No Capitalize
+      #   if: ${{ success() || failure() }}
+      #   uses: gsactions/commit-message-checker@v1
+      #   with:
+      #     pattern: ".*: [a-z].*"
+      #     error: "Don't capitalize the first letter in the commit subject"
+      #     excludeTitle: "true"
+      #     checkAllCommitMessages: "true"
+      #     accessToken: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check Subject No Dot
-        if: ${{ success() || failure() }}
-        uses: gsactions/commit-message-checker@v1
-        with:
-          pattern: "[^\\.]$"
-          error: "Don't use dot (.) at the end of the commit subject"
-          excludeTitle: "true"
-          checkAllCommitMessages: "true"
-          accessToken: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Check Subject No Dot
+      #   if: ${{ success() || failure() }}
+      #   uses: gsactions/commit-message-checker@v1
+      #   with:
+      #     pattern: "[^\\.]$"
+      #     error: "Don't use dot (.) at the end of the commit subject"
+      #     excludeTitle: "true"
+      #     checkAllCommitMessages: "true"
+      #     accessToken: ${{ secrets.GITHUB_TOKEN }}

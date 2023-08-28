@@ -1,0 +1,193 @@
+# Reusable workflow for testing commit messages
+name: "Reusable Commit Validator"
+
+on:
+  # trigger event to be called from a caller workflow
+  workflow_call:
+    inputs:
+      # input parameter to validate commit message type and format
+      commitRegexPattern:
+        default: "^AB#[0-9]+ \\b(feat|fix|test|docs|chore|style|refactor|ci|cd|build|perf|revert)\\b"
+        required: false
+        type: string
+      # input parameter to print error message related to commit message type and format
+      checkSubjectTypeMessageError:
+        default: "You need to follow conventional commit type in the title line. Please see https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#type for examples"
+        required: false
+        type: string
+      # input parameter to validate commit message type and format
+      SubjectMaxLength:
+        default: 50
+        required: false
+        type: number
+      # input parameter to enable check: commit message type
+      checkSubjectType:
+        required: false
+        type: boolean
+        default: true
+        description: "check commit message type"
+      # input parameter to enable check: commit message duplicity
+      checkSubjectDuplicity:
+        required: false
+        type: boolean
+        default: true
+        description: "check commit message duplicity"
+      # input parameter to enable check: commit message max length
+      checkSubjectMaxLength:
+        required: false
+        type: boolean
+        default: true
+        description: "check commit message max length"
+      # input parameter to enable check: commit message min lenght
+      checkSubjectMinLength:
+        required: false
+        type: boolean
+        default: true
+        description: "check commit message min length"
+      # input parameter to enable check: commit message no capitalize
+      checkSubjectNoCapitalize:
+        required: false
+        type: boolean
+        default: true
+        description: "check commit message not capitalize"
+      # input parameter to enable check: commit message not dot
+      checkSubjectNoDot:
+        required: false
+        type: boolean
+        default: true
+        description: "check commit message not dot"
+      # input parameter to enable check: commit message body space
+      checkSubjectBodySpace:
+        required: false
+        type: boolean
+        default: true
+        description: "check commit message body space"
+      # input parameter to enable check: commit message colon space
+      checkSubjectSpaceColon:
+        required: false
+        type: boolean
+        default: true
+        description: "check commit message space after colon"
+
+    secrets:
+    # token to enable access to the commit history
+      GIT_TOKEN:
+        required: true
+
+jobs:
+  # commit message validator
+  commit_validator:
+    name: Commit Validator
+    runs-on: ubuntu-22.04
+
+    steps:
+      # clones current repository
+      - name: Checkout current repository
+        uses: actions/checkout@v3.3.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      # validate message type: feat|fix|docs etc
+      - name: Check Subject Message Type
+        if: ${{ inputs.checkSubjectType }}
+        uses: gsactions/commit-message-checker@v2.0.0
+        with:
+          pattern: ${{ inputs.commitRegexPattern }}
+          flags: "gm"
+          error: ${{ inputs.checkSubjectTypeMessageError }}
+          excludeTitle: "true"
+          excludeDescription: "true"
+          checkAllCommitMessages: "true"
+          accessToken: ${{ secrets.GIT_TOKEN }}
+
+      # validate duplicity
+      - name: Check Subject Message Duplicity
+        if: ${{ ( inputs.checkSubjectDuplicity ) && ( success() || failure() ) }}
+        run: |
+          max_commit=$(git log origin/${{ github.event.pull_request.base.ref }}.. --oneline | cut -c 9- | sort | uniq -c | sort -n | tail -1 | grep -qE '^\s*[1-1]+'; echo $?)
+          if [ $max_commit == 0 ]
+          then
+            echo "Hey All commit looks good. 👌"
+            exit 0
+          else
+            echo "Commit List:"
+            git log origin/${{ github.event.pull_request.base.ref }}.. --oneline | cut -c 9- | sort | uniq -c | sort -n 
+            { echo "Hey you have duplicated commit messages, you should reword or squash your commits!" 2>&1 ; exit $max_commit; }
+          fi
+        shell: bash
+
+      # validate message length to 50 characters max.
+      - name: Check Subject Max Line Length
+        if: ${{ ( inputs.checkSubjectMaxLength ) && ( success() || failure() ) }}
+        uses: gsactions/commit-message-checker@v2.0.0
+        with:
+          pattern: "^.{0,${{ inputs.SubjectMaxLength }}}(\n.*)*$"
+          error: "The maximum line length of ${{ inputs.SubjectMaxLength }} characters is exceeded."
+          excludeTitle: "true" # optional: this excludes the title of a pull request
+          excludeDescription: "true" # optional: this excludes the description body of a pull request
+          checkAllCommitMessages: "true" # optional: this checks all commits associated with a pull request
+          accessToken: ${{ secrets.GIT_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+
+      # validate message length to 50 characters min.
+      - name: Check Subject Min Line Length
+        if: ${{ ( inputs.checkSubjectMinLength ) && ( success() || failure() ) }}
+        uses: gsactions/commit-message-checker@v2.0.0
+        with:
+          pattern: ":.{12,}(\n.*)*$"
+          flags: "gm"
+          error: "A meaningful title should contain at least 3 words"
+          excludeTitle: "true"
+          excludeDescription: "true"
+          checkAllCommitMessages: "true"
+          accessToken: ${{ secrets.GIT_TOKEN }}
+
+      # validate message has not capitalize letter at the beginning
+      - name: Check Subject No Capitalize
+        if: ${{ ( inputs.checkSubjectNoCapitalize ) && ( success() || failure() ) }}
+        uses: gsactions/commit-message-checker@v2.0.0
+        with:
+          pattern: ".*: [a-z].*"
+          error: "Don't capitalize the first letter in the commit subject"
+          excludeTitle: "true"
+          excludeDescription: "true"
+          checkAllCommitMessages: "true"
+          accessToken: ${{ secrets.GIT_TOKEN }}
+
+      # validate message has not dot at the end
+      - name: Check Subject No Dot
+        if: ${{ ( inputs.checkSubjectNoDot ) && ( success() || failure() ) }}
+        uses: gsactions/commit-message-checker@v2.0.0
+        with:
+          pattern: "[^\\.]$"
+          error: "Don't use dot (.) at the end of the commit subject"
+          excludeTitle: "true"
+          excludeDescription: "true"
+          checkAllCommitMessages: "true"
+          accessToken: ${{ secrets.GIT_TOKEN }}
+
+      # validate message has space between title and body
+      - name: Check Subject Body Space
+        if: ${{ ( inputs.checkSubjectBodySpace ) && ( success() || failure() ) }}
+        uses: gsactions/commit-message-checker@v2.0.0
+        with:
+          pattern: "^[^\n]+(\n\n.+)?$"
+          flags: "s"
+          error: "Commit header and body must be separated by one blank line"
+          excludeTitle: "true"
+          excludeDescription: "true"
+          checkAllCommitMessages: "true"
+          accessToken: ${{ secrets.GIT_TOKEN }}
+
+      # validate message has space between colon and subject
+      - name: Check Space After Colon
+        if: ${{ ( inputs.checkSubjectSpaceColon ) && ( success() || failure() ) }}
+        uses: gsactions/commit-message-checker@v2.0.0
+        with:
+          pattern: ".*:\\s.*"
+          flags: "gm"
+          error: "There must be a space between colon and subject"
+          excludeTitle: "true"
+          excludeDescription: "true"
+          checkAllCommitMessages: "true"
+          accessToken: ${{ secrets.GIT_TOKEN }}
