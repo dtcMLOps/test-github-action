@@ -76,7 +76,6 @@ jobs:
                   "exhaustive": true,
                   "rules": [
                     {
-                      "pattern": "merged",
                       "on_property": "status",
                       "flags": "gu"
                     }
@@ -125,6 +124,8 @@ jobs:
                     }
                   ]
                 }
+
+              ],              
                 
               ],
               "sort": {
