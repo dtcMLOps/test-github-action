@@ -1,0 +1,226 @@
+# Continuous integration workflow
+name: "Reusable CI Pipeline PYTHON"
+
+on:
+  # trigger event to be called from a caller workflow
+  workflow_call:
+    inputs:
+      # path to project source directory, e.g. src/
+      project_src_directory:
+        required: false
+        type: string
+        default: "."
+        description: "path to project source directory"
+      # path to project test directory, e.g. tests/
+      test_folder_directory:
+        required: false
+        type: string
+        default: "none"
+        description: "path to tests folder"
+      # path to project unit test directory, e.g. tests/unit/
+      unit_test_directory:
+        required: false
+        type: string
+        default: "none"
+        description: "path to unit testing folder"
+      # path to project integration test directory, e.g. tests/integration/
+      integration_test_directory:
+        required: false
+        type: string
+        default: "none"
+        description: "path to integration testing folder"
+      # path to project requirements directory, e.g. src/requirements.txt
+      requirements_directory:
+        required: false
+        type: string
+        description: "path to requirements.txt"
+      # path to project requirements-dev directory, e.g. src/requirements-dev.txt
+      requirements_dev_directory:
+        required: false
+        type: string
+        description: "path to requirements-dev.txt"
+      # path to project sonar-project.properties file, e.g. src/sonar-project.properties
+      sonar_project_dir:
+        required: false
+        default: "."
+        type: string
+        description: "path to sonar-project.properties file in module"
+      # python versions to be used for testing
+      python_test_versions:
+        default: "['3.8']"
+        required: false
+        type: string
+      # input parameter to enable/disable linter job
+      enable_linter:
+        required: false
+        type: boolean
+        default: true
+        description: "Enable/disable linter job"
+      # input parameter to enable/disable black format
+      checkBlack:
+        required: false
+        type: boolean
+        default: true
+        description: "Enable/disable black format"
+      # input parameter to enable/disable flake8
+      checkFlake8:
+        required: false
+        type: boolean
+        default: true
+        description: "Enable/disable flake8 validation"
+      # input parameter to enable/disable isort
+      checkIsort:
+        required: false
+        type: boolean
+        default: true
+        description: "Enable/disable isort validation"
+      # input parameter to enable/disable interrogate
+      checkInterrogate:
+        required: false
+        type: boolean
+        default: true
+        description: "Enable/disable interrogate validation"
+      # input parameter to enable/disable darglint
+      checkDarglint:
+        required: false
+        type: boolean
+        default: true
+        description: "Enable/disable darglint validation"
+      # input parameter to enable/disable mypy
+      checkMypy:
+        required: false
+        type: boolean
+        default: true
+        description: "Enable/disable mypy validation"
+      # input parameter to enable/disable docformatter
+      checkDocformatter:
+        required: false
+        type: boolean
+        default: true
+        description: "Enable/disable docformatter"
+      # input parameter to enable/disable pylint
+      checkPylint:
+        required: false
+        type: boolean
+        default: true
+        description: "Enable/disable pylint"
+      # input parameter to enable/disable sort-requirements
+      checkSortRequirements:
+        required: false
+        type: boolean
+        default: true
+        description: "Enable/disable sort-requirements"
+      # input parameter to set pyproject.toml directory
+      pyProjectDirectory:
+        default: "pyproject.toml"
+        required: false
+        type: string
+
+    # secrets to be used in the workflow
+    secrets:
+      # token to be used for authentication to github
+      GIT_TOKEN:
+        required: true
+      # token to be used for authentication to sonarcloud
+      SONAR_TOKEN:
+        required: true
+      # environment variables to be used in the workflow
+      ENV_VARS:
+        description: List of environment variables to set up, given in env=value format.
+        required: false
+
+jobs:
+
+  # style formatter validator
+  lint_validator:
+    name: "CI"
+    if: ${{ inputs.enable_linter }}
+    uses: ./.github/workflows/reusable_lint_python_validator.yml
+    with:
+      pyProjectDirectory: ${{ inputs.pyProjectDirectory }}
+      checkBlack: ${{ inputs.checkBlack }}
+      checkFlake8: ${{ inputs.checkFlake8 }}
+      checkIsort: ${{ inputs.checkIsort }}
+      checkInterrogate: ${{ inputs.checkInterrogate }}
+      checkDarglint: ${{ inputs.checkDarglint }}
+      checkMypy: ${{ inputs.checkMypy }}
+      checkDocformatter: ${{ inputs.checkDocformatter }}
+      checkPylint: ${{ inputs.checkPylint }}
+      checkSortRequirements: ${{ inputs.checkSortRequirements }}
+      requirements_directory: ${{ inputs.requirements_directory }}
+      requirements_dev_directory: ${{ inputs.requirements_dev_directory }}
+
+  # test folder existence validator
+  test_folder_validator:
+    name: "CI"
+    uses: ./.github/workflows/reusable_test_file_existence_validator.yml
+    with:
+      projectDir: ${{ inputs.test_folder_directory }}
+
+  # unit integration testing validator
+  run_unit_int_validator:
+    name: "CI"
+    needs:
+      [
+        lint_validator,
+        test_folder_validator
+      ]
+      
+    if: |
+      always() &&
+      needs.test_folder_validator.outputs.test_files_exist == 'yes' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+
+    uses: ./.github/workflows/reusable_unit_integration_py_tests_validator.yml
+    with:
+      project_src_directory: ${{ inputs.project_src_directory }}
+      requirements_directory: ${{ inputs.requirements_directory }}
+      requirements_dev_directory: ${{ inputs.requirements_dev_directory }}
+      test_folder_directory: ${{ inputs.test_folder_directory }}
+      unit_test_directory: ${{ inputs.unit_test_directory }}
+      integration_test_directory: ${{ inputs.integration_test_directory }}
+      python_test_versions: ${{ inputs.python_test_versions }}
+    secrets:
+      GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+      ENV_VARS: ${{ secrets.ENV_VARS }}
+
+  # run sonarcloud scan with tests and coverage report
+  call_reusable_sonarcloud_coverage:
+    name: "CI"
+    needs: run_unit_int_validator
+
+    if: |
+      always() &&
+      needs.test_folder_validator.outputs.test_files_exist == 'yes' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+
+    uses: ./.github/workflows/reusable_sonarcloud_scan_with_tests.yml
+    with:
+      sonar_project_dir: ${{ inputs.sonar_project_dir }}
+      unit_test_directory: ${{ inputs.unit_test_directory }}
+      python_test_versions: ${{ inputs.python_test_versions }}
+    secrets:
+      GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # run sonarcloud scan without tests and coverage report
+  call_reusable_sonarcloud:
+    name: "CI"
+    needs:
+      [
+        lint_validator,
+        test_folder_validator
+      ]
+    if: |
+      needs.test_folder_validator.outputs.test_files_exist == 'no' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+
+    uses: ./.github/workflows/reusable_sonarcloud_scan_no_tests.yml
+    with:
+      sonar_project_dir: ${{ inputs.sonar_project_dir }}
+    secrets:
+      GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

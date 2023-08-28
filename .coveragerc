@@ -1,0 +1,12 @@
+# .coveragerc to control coverage.py
+[run]
+relative_files = False
+omit = 
+    */tests/*
+    *__init__.py
+
+# related to https://github.com/nedbat/coveragepy/issues/1082
+concurrency = thread,greenlet
+
+[report]
+skip_empty = True

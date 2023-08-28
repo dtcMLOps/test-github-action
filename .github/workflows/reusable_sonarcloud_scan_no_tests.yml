@@ -1,0 +1,42 @@
+# Reusable workflow for running sonarcloud scan
+name: "Reusable SonarCloud Scan"
+
+on:
+  # trigger event to be called from a caller workflow
+  workflow_call:
+    inputs:
+      # input parameter to provide sonarproject directory
+      sonar_project_dir:
+        required: true
+        type: string
+        description: "path to sonar-project.properties file in module"
+
+    secrets:
+      # token to enable access to the commit history
+      GIT_TOKEN:
+        required: true
+      # token to enable sonarcloud execution
+      SONAR_TOKEN:
+        required: true
+
+jobs:
+
+  # run sonarcloud without tests and coverage
+  sonarcloudScanNoTests:
+    name: SonarCloud Scan
+    runs-on: ubuntu-22.04
+
+    steps:
+      # clones current repository
+      - uses: actions/checkout@v3.3.0
+        with:
+          fetch-depth: 0
+
+      # run SonarCloud scan
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v1.8
+        env:
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ inputs.sonar_project_dir }}

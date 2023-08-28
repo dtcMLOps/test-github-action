@@ -1,0 +1,63 @@
+# Reusable workflow for testing if test files exists
+name: "Reusable Test Files Existence"
+
+on:
+  # trigger event to be called from a caller workflow
+  workflow_call:
+    inputs:
+      # input parameter to define project directory
+      projectDir:
+        default: "."
+        required: false
+        type: string
+      # input parameter to find test pattern
+      fileTestPattern:
+        default: "test*.py"
+        required: false
+        type: string
+
+    # output boolean to be used in the caller workflow
+    outputs:
+      test_files_exist:
+        description: "return true/false if test files are found"
+        value: ${{ jobs.test_folder_validator.outputs.test_files_exist }}
+
+    secrets:
+    # token to enable access to the commit history
+      GIT_TOKEN:
+        required: false
+
+jobs:
+
+  # test folder existence validator
+  test_folder_validator:
+    name: Tests Files Validator
+    runs-on: ubuntu-22.04
+
+    outputs:
+      test_files_exist: ${{ steps.step_check_if_test_files_exist.outputs.test_files_exist }}
+
+    steps:
+      # clones current repository
+      - name: Checkout code
+        uses: actions/checkout@v3.3.0
+        with:
+          fetch-depth: 0
+
+      # check if test_*. exists
+      - name: Check if test files exist
+        id: step_check_if_test_files_exist
+        run: |
+          if [[ $(find ${{ inputs.projectDir }} -type f -name ${{ inputs.fileTestPattern }}) ]]
+          then
+            echo "test files exist"
+            echo "test_files_exist=yes" >> $GITHUB_OUTPUT
+          else
+            echo "no test files exist"
+            echo "test_files_exist=no" >> $GITHUB_OUTPUT
+          fi
+
+      # display check result
+      - name: Display value of test_files_exist
+        run: echo ${{ steps.step_check_if_test_files_exist.outputs.test_files_exist }}
+        
